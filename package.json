@@ -1,0 +1,22 @@
+{
+  "name": "4d-classic-to-oop",
+  "version": "0.1.0",
+  "description": "Generate a Markdown mapping of 4D classic commands to their OOP (class/ORDA) equivalents from the 4D docs sources",
+  "type": "module",
+  "bin": {
+    "c2o": "bin/c2o.js"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "render": "node bin/c2o.js render",
+    "coverage": "node bin/c2o.js coverage",
+    "sample": "node bin/c2o.js render --out output/classic-to-oop.md"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "yaml": "^2.9.1"
+  }
+}

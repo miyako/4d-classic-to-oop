@@ -1,0 +1,983 @@
+# Curated mapping of 4D classic commands to OOP equivalents (source of truth for `c2o render`).
+#
+# Each entry:
+#   command:        classic command name (as in the docs title)
+#   targets:        OOP equivalents. "Class.function()", "Class.property", "4D.Class.new()"
+#                   or "command:Name" for object-returning commands (File, Folder, New collection...)
+#   classification: Drop-in  = 1:1 replacement with the same semantics
+#                   Refactor = equivalent feature with a different model (document ref -> FileHandle,
+#                              arrays -> collections, current selection -> entity selection...)
+#                   Partial  = the OOP API covers only part of the command
+#   note:           one short sentence (note_ja: optional Japanese note used with --lang ja)
+#   orda:           optional, force the ORDA (true) or general (false) section; default from theme/targets
+#   deprecated:     optional override of the deprecation flag detected from the docs
+#   reviewed:       false until a human has checked the entry
+#
+# First draft generated with AI assistance: every entry is "reviewed: false".
+schema: 1
+
+# Commands reviewed and considered to have no OOP equivalent (excluded from coverage "to review" lists).
+ignore:
+  # Already OOP / object-returning commands (they are the modern API themselves)
+  - "Create entity selection"
+  - "File"
+  - "Folder"
+  - "Formula"
+  - "IMAP New transporter"
+  - "MAIL Convert to MIME"
+  - "MAIL New attachment"
+  - "New shared collection"
+  - "OB Copy"
+  - "OB REMOVE"
+  - "POP3 New transporter"
+  - "Process activity"
+  - "Process info"
+  - "Session"
+  - "Session info"
+  - "Session storage"
+  - "SMTP New transporter"
+  - "Super"
+  - "This"
+  - "Web Form"
+  - "WEB Server"
+  - "WEB Server list"
+  - "ZIP Create archive"
+  - "ZIP Read archive"
+  # Reviewed (AI draft): no credible OOP equivalent
+  - "ABORT PROCESS BY ID"
+  - "Application info"
+  - "BLOB PROPERTIES"
+  - "BLOB to integer"
+  - "BLOB to list"
+  - "BLOB to longint"
+  - "BLOB to real"
+  - "BLOB to text"
+  - "BLOB TO VARIABLE"
+  - "COMPRESS BLOB"
+  - "Create deployment license"
+  - "CREATE INDEX"
+  - "CREATE SELECTION FROM ARRAY"
+  - "DELETE FROM BLOB"
+  - "EXPAND BLOB"
+  - "Get external data path"
+  - "GET FIELD ENTRY PROPERTIES"
+  - "GET FIELD PROPERTIES"
+  - "GET HIGHLIGHTED RECORDS"
+  - "GET MISSING TABLE NAMES"
+  - "GET QUERY DESTINATION"
+  - "Get query limit"
+  - "GET RELATION PROPERTIES"
+  - "GET SERIAL PORT MAPPING"
+  - "HIGHLIGHT RECORDS"
+  - "INSERT IN BLOB"
+  - "INTEGER TO BLOB"
+  - "LIST TO BLOB"
+  - "Localized document path"
+  - "Locked records info"
+  - "LONGINT TO BLOB"
+  - "New process"
+  - "QUERY BY EXAMPLE"
+  - "REAL TO BLOB"
+  - "Select document"
+  - "Select folder"
+  - "SEND RECORD"
+  - "SEND VARIABLE"
+  - "SET BLOB SIZE"
+  - "SET QUERY AND LOCK"
+  - "SET QUERY DESTINATION"
+  - "SET QUERY LIMIT"
+  - "SET USER ALIAS"
+  - "Sum squares"
+  - "TEXT TO BLOB"
+  - "VARIABLE TO BLOB"
+  - "WEB GET BODY PART"
+  - "WEB Get body part count"
+  - CLOSE DOCUMENT       # FileHandle is closed when released (no explicit function)
+  - SET DOCUMENT PROPERTIES  # File date/time/hidden properties are read-only
+  - RELATE ONE           # use ORDA relation attributes ($entity.relation), not class functions
+  - RELATE MANY
+  - RELATE ONE SELECTION
+  - RELATE MANY SELECTION
+  - Is data file locked   # DataStore.locked() reports a datastore lock (flushAndLock), not a read-only data file
+
+mappings:
+
+  # --- System Documents ---
+  - command: Append document
+    targets: [File.open(), FileHandle.writeText()]
+    classification: Refactor
+    note: "Use File.open(\"append\") to get a FileHandle positioned at the end of the file instead of a document reference."
+    reviewed: false
+  - command: Convert path POSIX to system
+    targets: [File.platformPath, Folder.platformPath]
+    classification: Drop-in
+    note: File(posixPath).platformPath (or Folder(...) for folders) returns the platform path; the path must be absolute or filesystem-based.
+    reviewed: false
+  - command: Convert path system to POSIX
+    targets: [File.path, Folder.path]
+    classification: Drop-in
+    note: File(platformPath; fk platform path).path returns the POSIX path.
+    reviewed: false
+  - command: COPY DOCUMENT
+    targets: [File.copyTo(), Folder.copyTo()]
+    classification: Drop-in
+    note: copyTo() takes a destination Folder object plus optional new name and overwrite flag and returns the copy.
+    reviewed: false
+  - command: CREATE ALIAS
+    targets: [File.createAlias(), Folder.createAlias()]
+    classification: Drop-in
+    note: Creates an alias (macOS) or shortcut (Windows) in a destination Folder object.
+    reviewed: false
+  - command: Create document
+    targets: [File.create(), File.open()]
+    classification: Refactor
+    note: "Create the file with File.create() and get a FileHandle with File.open(\"write\") instead of a document reference."
+    reviewed: false
+  - command: CREATE FOLDER
+    targets: [Folder.create()]
+    classification: Drop-in
+    note: Folder(path).create() creates the folder and any missing parent folders.
+    reviewed: false
+  - command: DELETE DOCUMENT
+    targets: [File.delete()]
+    classification: Drop-in
+    note: Deletes the file referenced by the File object.
+    reviewed: false
+  - command: DELETE FOLDER
+    targets: [Folder.delete()]
+    classification: Drop-in
+    note: Supports the same Delete only if empty / Delete with contents options.
+    reviewed: false
+  - command: DOCUMENT LIST
+    targets: [Folder.files()]
+    classification: Refactor
+    note: Returns a collection of File objects instead of filling a text array of names.
+    reviewed: false
+  - command: Document to text
+    targets: [File.getText()]
+    classification: Drop-in
+    note: Reads the whole file as text with optional charset and line-break mode.
+    reviewed: false
+  - command: FOLDER LIST
+    targets: [Folder.folders()]
+    classification: Refactor
+    note: Returns a collection of Folder objects instead of filling a text array of names.
+    reviewed: false
+  - command: GET DOCUMENT ICON
+    targets: [File.getIcon(), Folder.getIcon()]
+    classification: Drop-in
+    note: Returns the icon picture of the file or folder.
+    reviewed: false
+  - command: Get document position
+    targets: [FileHandle.offset]
+    classification: Refactor
+    note: Read the offset property of the FileHandle instead of passing a document reference.
+    reviewed: false
+  - command: GET DOCUMENT PROPERTIES
+    targets: [File.creationDate, File.creationTime, File.modificationDate, File.modificationTime, File.isWritable, File.hidden]
+    classification: Refactor
+    note: Each document property is exposed as a read-only property of the File object.
+    reviewed: false
+  - command: Get document size
+    targets: [File.size, FileHandle.getSize()]
+    classification: Drop-in
+    note: Use File.size for a closed file or FileHandle.getSize() for an open one.
+    reviewed: false
+  - command: MOVE DOCUMENT
+    targets: [File.moveTo(), File.rename()]
+    classification: Drop-in
+    note: moveTo() moves (and optionally renames) the file; rename() renames it in place.
+    reviewed: false
+  - command: Object to path
+    targets: [Folder.file(), Folder.folder()]
+    classification: Refactor
+    note: Build paths by navigating from a parent Folder object rather than assembling a path from an object.
+    reviewed: false
+  - command: Open document
+    targets: [File.open()]
+    classification: Refactor
+    note: "File.open() returns a FileHandle object (read, write or append mode) instead of a document reference; there is no file dialog."
+    reviewed: false
+  - command: Path to object
+    targets: [File.name, File.extension, File.parent, File.isFolder]
+    classification: Refactor
+    note: The path components are properties of the File/Folder object.
+    reviewed: false
+  - command: RESOLVE ALIAS
+    targets: [File.original, Folder.original]
+    classification: Drop-in
+    note: original returns the target of an alias or shortcut.
+    reviewed: false
+  - command: SET DOCUMENT POSITION
+    targets: [FileHandle.offset]
+    classification: Refactor
+    note: Assign the offset property of the FileHandle instead of passing a document reference.
+    reviewed: false
+  - command: SET DOCUMENT SIZE
+    targets: [FileHandle.setSize()]
+    classification: Refactor
+    note: Resizes the file through its FileHandle.
+    reviewed: false
+  - command: Test path name
+    targets: [File.exists, Folder.exists, File.isFolder]
+    classification: Refactor
+    note: Check exists / isFile / isFolder on a File or Folder object instead of decoding a type code.
+    reviewed: false
+  - command: TEXT TO DOCUMENT
+    targets: [File.setText()]
+    classification: Drop-in
+    note: Writes text to a file in one call with optional charset and line-break mode.
+    reviewed: false
+
+  # --- Communications ---
+  - command: RECEIVE PACKET
+    targets: [FileHandle.readText(), FileHandle.readLine(), FileHandle.readBlob()]
+    classification: Refactor
+    note: "For documents, read from a FileHandle (by length, delimiter or line) instead of a document reference; serial ports are not covered."
+    reviewed: false
+  - command: SEND PACKET
+    targets: [FileHandle.writeText(), FileHandle.writeBlob()]
+    classification: Refactor
+    note: "For documents, write through a FileHandle object instead of a document reference; serial ports are not covered."
+    reviewed: false
+  - command: SET CHANNEL
+    targets: [File.open()]
+    classification: Partial
+    note: Only the document use of SET CHANNEL maps to File.open(); serial port channels have no OOP equivalent.
+    reviewed: false
+  - command: USE CHARACTER SET
+    targets: [File.open(), FileHandle.charset]
+    classification: Partial
+    note: The charset is set per FileHandle when calling File.open(); it does not apply globally.
+    reviewed: false
+
+  # --- BLOB ---
+  - command: BLOB size
+    targets: [Blob.size]
+    classification: Refactor
+    note: 4D.Blob objects are immutable; size is a read-only property.
+    reviewed: false
+  - command: BLOB TO DOCUMENT
+    targets: [File.setContent()]
+    classification: Drop-in
+    note: Writes a BLOB (or 4D.Blob) as the whole file content.
+    reviewed: false
+  - command: COPY BLOB
+    targets: [Blob.slice()]
+    classification: Partial
+    note: slice() returns a new 4D.Blob with a byte range; copying into an existing BLOB at an offset is not supported.
+    reviewed: false
+  - command: DECRYPT BLOB
+    targets: [CryptoKey.decrypt()]
+    classification: Partial
+    note: "CryptoKey decrypts Base64 text with an RSA key, not BLOBs encrypted with ENCRYPT BLOB."
+    reviewed: false
+  - command: DOCUMENT TO BLOB
+    targets: [File.getContent()]
+    classification: Drop-in
+    note: Returns the whole file content as a 4D.Blob.
+    reviewed: false
+  - command: ENCRYPT BLOB
+    targets: [CryptoKey.encrypt()]
+    classification: Partial
+    note: "CryptoKey encrypts text (RSA, Base64 output) rather than BLOBs."
+    reviewed: false
+
+  # --- Arrays ---
+  - command: APPEND TO ARRAY
+    targets: [Collection.push()]
+    classification: Refactor
+    note: Arrays become collections; push() appends one or more values.
+    reviewed: false
+  - command: ARRAY BLOB
+    targets: ["command:New collection", Collection.resize()]
+    classification: Refactor
+    note: "Use an untyped collection (New collection or []) instead of a typed array."
+    reviewed: false
+  - command: ARRAY BOOLEAN
+    targets: ["command:New collection", Collection.resize()]
+    classification: Refactor
+    note: "Use an untyped collection (New collection or []) instead of a typed array."
+    reviewed: false
+  - command: ARRAY DATE
+    targets: ["command:New collection", Collection.resize()]
+    classification: Refactor
+    note: "Use an untyped collection (New collection or []) instead of a typed array."
+    reviewed: false
+  - command: ARRAY INTEGER
+    targets: ["command:New collection", Collection.resize()]
+    classification: Refactor
+    note: "Use an untyped collection (New collection or []) instead of a typed array."
+    reviewed: false
+  - command: ARRAY LONGINT
+    targets: ["command:New collection", Collection.resize()]
+    classification: Refactor
+    note: "Use an untyped collection (New collection or []) instead of a typed array."
+    reviewed: false
+  - command: ARRAY OBJECT
+    targets: ["command:New collection", Collection.resize()]
+    classification: Refactor
+    note: "Use an untyped collection (New collection or []) instead of a typed array."
+    reviewed: false
+  - command: ARRAY PICTURE
+    targets: ["command:New collection", Collection.resize()]
+    classification: Refactor
+    note: "Use an untyped collection (New collection or []) instead of a typed array."
+    reviewed: false
+  - command: ARRAY REAL
+    targets: ["command:New collection", Collection.resize()]
+    classification: Refactor
+    note: "Use an untyped collection (New collection or []) instead of a typed array."
+    reviewed: false
+  - command: ARRAY TEXT
+    targets: ["command:New collection", Collection.resize()]
+    classification: Refactor
+    note: "Use an untyped collection (New collection or []) instead of a typed array."
+    reviewed: false
+  - command: ARRAY TIME
+    targets: ["command:New collection", Collection.resize()]
+    classification: Refactor
+    note: "Use an untyped collection (New collection or []) instead of a typed array; times are stored as numbers."
+    reviewed: false
+  - command: COPY ARRAY
+    targets: [Collection.copy()]
+    classification: Refactor
+    note: copy() returns a deep copy of the collection.
+    reviewed: false
+  - command: Count in array
+    targets: [Collection.countValues()]
+    classification: Refactor
+    note: countValues() counts the elements equal to a value.
+    reviewed: false
+  - command: DELETE FROM ARRAY
+    targets: [Collection.remove()]
+    classification: Refactor
+    note: remove() deletes one or more elements at an index.
+    reviewed: false
+  - command: Find in array
+    targets: [Collection.indexOf(), Collection.findIndex()]
+    classification: Refactor
+    note: indexOf() finds a value; findIndex() finds the first element matching a formula.
+    reviewed: false
+  - command: Find in sorted array
+    targets: [Collection.indexOf()]
+    classification: Partial
+    note: No binary search or insertion-point result; indexOf() performs a linear search.
+    reviewed: false
+  - command: INSERT IN ARRAY
+    targets: [Collection.insert()]
+    classification: Refactor
+    note: insert() adds an element at an index.
+    reviewed: false
+  - command: MULTI SORT ARRAY
+    targets: [Collection.multiSort(), Collection.orderBy()]
+    classification: Refactor
+    note: multiSort() keeps several collections synchronized; orderBy() sorts a collection of objects on several properties.
+    reviewed: false
+  - command: Size of array
+    targets: [Collection.length]
+    classification: Refactor
+    note: length returns the number of elements.
+    reviewed: false
+  - command: SORT ARRAY
+    targets: [Collection.sort(), Collection.orderBy()]
+    classification: Refactor
+    note: sort() sorts in place; orderBy() returns a new sorted collection.
+    reviewed: false
+
+  # --- JSON ---
+  - command: JSON PARSE ARRAY
+    targets: ["command:JSON Parse"]
+    classification: Refactor
+    note: "JSON Parse returns a collection for a JSON array, so no target array is needed."
+    reviewed: false
+  - command: JSON Stringify array
+    targets: ["command:JSON Stringify"]
+    classification: Refactor
+    note: JSON Stringify serializes a collection directly.
+    reviewed: false
+
+  # --- HTTP ---
+  - command: HTTP AUTHENTICATE
+    targets: [4D.HTTPRequest.new()]
+    classification: Refactor
+    note: Credentials are passed in the authentication option of each request instead of a process-wide setting.
+    reviewed: false
+  - command: HTTP Get
+    targets: [4D.HTTPRequest.new(), HTTPRequest.wait(), HTTPRequest.response]
+    classification: Refactor
+    note: "Requests are asynchronous objects; call wait() and read response to get status, headers and body."
+    reviewed: false
+  - command: HTTP GET OPTION
+    targets: [HTTPRequest.timeout, HTTPRequest.protocol, HTTPAgent.params]
+    classification: Partial
+    note: Options are per-request (or per HTTPAgent) properties rather than process-wide settings.
+    reviewed: false
+  - command: HTTP Request
+    targets: [4D.HTTPRequest.new(), HTTPRequest.wait(), HTTPRequest.response]
+    classification: Refactor
+    note: Requests are asynchronous objects with callbacks; call wait() for synchronous behavior.
+    reviewed: false
+  - command: HTTP SET CERTIFICATES FOLDER
+    targets: [4D.HTTPRequest.new()]
+    classification: Refactor
+    note: Pass the certificatesFolder option per request instead of setting it for the process.
+    reviewed: false
+  - command: HTTP SET OPTION
+    targets: [4D.HTTPRequest.new(), 4D.HTTPAgent.new()]
+    classification: Refactor
+    note: "Timeout, redirects, compression etc. are request options; keep-alive and connection settings live on an HTTPAgent."
+    reviewed: false
+
+  # --- Web Services (Client) ---
+  - command: WEB SERVICE CALL
+    targets: [4D.HTTPRequest.new()]
+    classification: Partial
+    note: "SOAP calls can be sent as raw HTTP requests, but SOAP envelope building and parsing must be done manually."
+    reviewed: false
+
+  # --- Processes ---
+  - command: SET ENVIRONMENT VARIABLE
+    targets: [4D.SystemWorker.new()]
+    classification: Partial
+    note: Environment variables are passed in the variables option of the SystemWorker.
+    reviewed: false
+  - command: LAUNCH EXTERNAL PROCESS
+    targets: [4D.SystemWorker.new(), SystemWorker.wait(), SystemWorker.response]
+    classification: Refactor
+    note: SystemWorker runs the process asynchronously with callbacks; wait() gives synchronous behavior and response/exitCode the results.
+    reviewed: false
+  - command: GET PROCESS VARIABLE
+    targets: ["command:Storage", "command:New signal"]
+    classification: Partial
+    note: "Share data through Storage/shared objects or a Signal instead of reading another process's variables."
+    reviewed: false
+  - command: SET PROCESS VARIABLE
+    targets: ["command:Storage", "command:New signal"]
+    classification: Partial
+    note: "Share data through Storage/shared objects or a Signal instead of writing another process's variables."
+    reviewed: false
+  - command: VARIABLE TO VARIABLE
+    targets: ["command:Storage", "command:New signal"]
+    classification: Partial
+    note: Share data through Storage/shared objects or a Signal instead of copying variables between processes.
+    reviewed: false
+  - command: Current user
+    targets: [Session.userName]
+    classification: Partial
+    note: "Session.userName is the session user (web, REST, client), which may differ from the 4D user in the users and groups directory."
+    reviewed: false
+  - command: User in group
+    targets: [Session.hasPrivilege()]
+    classification: Partial
+    note: Sessions use roles and privileges (roles.json) instead of 4D groups.
+    reviewed: false
+
+  # --- Formulas ---
+  - command: EXECUTE FORMULA
+    targets: ["command:Formula from string", Function.call()]
+    classification: Refactor
+    note: "Build a formula object with Formula from string and run it with call(), which also supports parameters and a This object."
+    reviewed: false
+  - command: EXECUTE METHOD
+    targets: ["command:Formula from string", Function.call(), Function.apply()]
+    classification: Refactor
+    note: Wrap the method in a formula object and invoke it with call() or apply().
+    reviewed: false
+
+  # --- Secured Protocol ---
+  - command: GENERATE ENCRYPTION KEYPAIR
+    targets: [4D.CryptoKey.new(), CryptoKey.getPrivateKey(), CryptoKey.getPublicKey()]
+    classification: Refactor
+    note: A CryptoKey object generates RSA or ECDSA key pairs and returns PEM keys.
+    reviewed: false
+
+  # --- Data Security ---
+  - command: Data file encryption status
+    targets: [DataStore.encryptionStatus()]
+    classification: Drop-in
+    note: Returns the same encryption status object for a datastore.
+    reviewed: false
+  - command: Register data key
+    targets: [DataStore.provideDataKey()]
+    classification: Partial
+    note: provideDataKey() supplies the key for the current datastore but does not store it in the 4D keychain.
+    reviewed: false
+
+  # --- 4D Environment ---
+  - command: Get 4D folder
+    targets: ["command:Folder"]
+    classification: Refactor
+    note: Folder(fk ... folder constant) returns a Folder object instead of a pathname.
+    reviewed: false
+  - command: Get 4D file
+    targets: ["command:File"]
+    classification: Refactor
+    note: File(file constant) returns a File object instead of a pathname.
+    reviewed: false
+
+  # --- System Environment ---
+  - command: System folder
+    targets: ["command:Folder"]
+    classification: Refactor
+    note: Folder(fk system folder / fk desktop folder / ...) returns a Folder object instead of a pathname.
+    reviewed: false
+
+  # --- Web Server ---
+  - command: WEB GET HTTP BODY
+    targets: [IncomingMessage.getText(), IncomingMessage.getBlob(), IncomingMessage.getJSON()]
+    classification: Refactor
+    note: In HTTP request handlers the request body is read from the IncomingMessage object.
+    reviewed: false
+  - command: WEB GET HTTP HEADER
+    targets: [IncomingMessage.headers, IncomingMessage.verb, IncomingMessage.url]
+    classification: Refactor
+    note: "In HTTP request handlers headers, verb and URL are IncomingMessage properties."
+    reviewed: false
+  - command: WEB GET OPTION
+    targets: [WebServer.HTTPPort, WebServer.HTTPSPort, WebServer.maxConcurrentProcesses]
+    classification: Refactor
+    note: Each Web option is a property of the WebServer object (WEB Server).
+    reviewed: false
+  - command: WEB GET VARIABLES
+    targets: [IncomingMessage.urlQuery]
+    classification: Partial
+    note: urlQuery covers URL parameters; form bodies must be parsed from the IncomingMessage body.
+    reviewed: false
+  - command: WEB Get current session ID
+    targets: [Session.id]
+    classification: Refactor
+    note: "With scalable sessions, Session.id identifies the current web session."
+    reviewed: false
+  - command: WEB Get server info
+    targets: [WebServer.isRunning, WebServer.openSSLVersion, WebServer.HTTPPort]
+    classification: Partial
+    note: Configuration and status are WebServer properties; statistics are not exposed.
+    reviewed: false
+  - command: WEB Is server running
+    targets: [WebServer.isRunning]
+    classification: Drop-in
+    note: isRunning on the WebServer object (WEB Server) returns the same status.
+    reviewed: false
+  - command: WEB LEGACY GET SESSION EXPIRATION
+    targets: [Session.expirationDate]
+    classification: Partial
+    note: Applies to scalable sessions only; legacy sessions are not supported.
+    reviewed: false
+  - command: WEB SEND BLOB
+    targets: [OutgoingMessage.setBody(), OutgoingMessage.setHeader()]
+    classification: Refactor
+    note: In HTTP request handlers return an OutgoingMessage whose body is set with setBody().
+    reviewed: false
+  - command: WEB SEND FILE
+    targets: [OutgoingMessage.setBody(), File.getContent()]
+    classification: Refactor
+    note: In HTTP request handlers return an OutgoingMessage with the file content as body.
+    reviewed: false
+  - command: WEB SEND HTTP REDIRECT
+    targets: [OutgoingMessage.setStatus(), OutgoingMessage.setHeader()]
+    classification: Refactor
+    note: Set a 3xx status and a Location header on the OutgoingMessage.
+    reviewed: false
+  - command: WEB SEND RAW DATA
+    targets: [OutgoingMessage.setStatus(), OutgoingMessage.setHeader(), OutgoingMessage.setBody()]
+    classification: Refactor
+    note: "Status, headers and body are set separately on the OutgoingMessage."
+    reviewed: false
+  - command: WEB SEND TEXT
+    targets: [OutgoingMessage.setBody(), OutgoingMessage.setHeader()]
+    classification: Refactor
+    note: In HTTP request handlers return an OutgoingMessage with a text body.
+    reviewed: false
+  - command: WEB SET HOME PAGE
+    targets: [WebServer.defaultHomepage]
+    classification: Refactor
+    note: Set defaultHomepage in the settings passed to WebServer.start(); it is not per web process.
+    reviewed: false
+  - command: WEB SET HTTP HEADER
+    targets: [OutgoingMessage.setHeader()]
+    classification: Refactor
+    note: In HTTP request handlers headers are set on the OutgoingMessage.
+    reviewed: false
+  - command: WEB SET OPTION
+    targets: [WebServer.start()]
+    classification: Refactor
+    note: Pass options as settings to WebServer.start(); they apply to that web server instance.
+    reviewed: false
+  - command: WEB SET ROOT FOLDER
+    targets: [WebServer.rootFolder, WebServer.start()]
+    classification: Refactor
+    note: Pass rootFolder in the settings of WebServer.start().
+    reviewed: false
+  - command: WEB START SERVER
+    targets: ["command:WEB Server", WebServer.start()]
+    classification: Drop-in
+    note: WEB Server returns the WebServer object whose start() starts it (optionally with settings).
+    reviewed: false
+  - command: WEB STOP SERVER
+    targets: ["command:WEB Server", WebServer.stop()]
+    classification: Drop-in
+    note: WEB Server returns the WebServer object whose stop() stops it.
+    reviewed: false
+
+  # --- ORDA ---
+  - command: DISTINCT ATTRIBUTE PATHS
+    targets: [EntitySelection.distinctPaths()]
+    classification: Refactor
+    note: distinctPaths() returns the paths of an object attribute for an entity selection.
+    reviewed: false
+  - command: DISTINCT ATTRIBUTE VALUES
+    targets: [EntitySelection.distinct()]
+    classification: Refactor
+    note: distinct() accepts an object attribute path and returns a collection.
+    reviewed: false
+  - command: DISTINCT VALUES
+    targets: [EntitySelection.distinct(), Collection.distinct()]
+    classification: Refactor
+    note: distinct() on an entity selection returns a collection instead of filling an array.
+    reviewed: false
+  - command: SELECTION TO ARRAY
+    targets: [EntitySelection.toCollection(), EntitySelection.extract()]
+    classification: Refactor
+    note: extract() returns attribute values as collections; toCollection() returns objects.
+    reviewed: false
+  - command: SELECTION RANGE TO ARRAY
+    targets: [EntitySelection.slice(), EntitySelection.extract()]
+    classification: Refactor
+    note: Take a range with slice() then extract() the attribute values.
+    reviewed: false
+  - command: ARRAY TO SELECTION
+    targets: [DataClass.fromCollection()]
+    classification: Refactor
+    note: fromCollection() creates or updates entities from a collection of objects.
+    reviewed: false
+  - command: JSON TO SELECTION
+    targets: [DataClass.fromCollection()]
+    classification: Refactor
+    note: Parse the JSON to a collection and pass it to fromCollection().
+    reviewed: false
+  - command: Selection to JSON
+    targets: [EntitySelection.toCollection()]
+    classification: Refactor
+    note: Convert with toCollection() then JSON Stringify.
+    reviewed: false
+  - command: Average
+    targets: [EntitySelection.average(), Collection.average()]
+    classification: Refactor
+    note: Computed on an entity selection (or collection) instead of the current selection or an array.
+    reviewed: false
+  - command: Max
+    targets: [EntitySelection.max(), Collection.max()]
+    classification: Refactor
+    note: Computed on an entity selection (or collection) instead of the current selection or an array.
+    reviewed: false
+  - command: Min
+    targets: [EntitySelection.min(), Collection.min()]
+    classification: Refactor
+    note: Computed on an entity selection (or collection) instead of the current selection or an array.
+    reviewed: false
+  - command: Sum
+    targets: [EntitySelection.sum(), Collection.sum()]
+    classification: Refactor
+    note: Computed on an entity selection (or collection) instead of the current selection or an array.
+    reviewed: false
+  - command: CREATE RECORD
+    targets: [DataClass.new()]
+    classification: Refactor
+    note: new() returns a new entity in memory; nothing is stored until save().
+    reviewed: false
+  - command: SAVE RECORD
+    targets: [Entity.save()]
+    classification: Refactor
+    note: save() returns a status object (optimistic locking) instead of relying on the current record.
+    reviewed: false
+  - command: DELETE RECORD
+    targets: [Entity.drop()]
+    classification: Refactor
+    note: drop() deletes the entity and returns a status object.
+    reviewed: false
+  - command: DUPLICATE RECORD
+    targets: [DataClass.new(), Entity.toObject(), Entity.fromObject()]
+    classification: Partial
+    note: "Create a new entity and copy attribute values with toObject()/fromObject(), excluding the primary key."
+    reviewed: false
+  - command: GOTO RECORD
+    targets: [DataClass.get()]
+    classification: Refactor
+    note: "Entities are loaded by primary key with get(), not by record number."
+    reviewed: false
+  - command: Is new record
+    targets: [Entity.isNew()]
+    classification: Refactor
+    note: isNew() tells whether the entity has not been saved yet.
+    reviewed: false
+  - command: Modified record
+    targets: [Entity.touched(), Entity.touchedAttributes()]
+    classification: Refactor
+    note: touched() / touchedAttributes() report modifications since loading.
+    reviewed: false
+  - command: Record number
+    targets: [Entity.getKey()]
+    classification: Partial
+    note: ORDA identifies entities by primary key; record numbers are not exposed.
+    reviewed: false
+  - command: Records in table
+    targets: [DataClass.getCount(), DataClass.all()]
+    classification: Refactor
+    note: getCount() (or all().length) returns the number of entities of the dataclass.
+    reviewed: false
+  - command: LOAD RECORD
+    targets: [Entity.reload(), Entity.lock()]
+    classification: Refactor
+    note: Entities are loaded when accessed; reload() refreshes data and lock() locks for writing.
+    reviewed: false
+  - command: Locked
+    targets: [Entity.lock()]
+    classification: Partial
+    note: The status object returned by lock() (or save()) reports locking instead of a separate check.
+    reviewed: false
+  - command: LOCKED BY
+    targets: [Entity.lock()]
+    classification: Partial
+    note: Lock owner details are returned in the lockInfo of the status object from lock().
+    reviewed: false
+  - command: READ ONLY
+    targets: [Entity.unlock()]
+    classification: Partial
+    note: ORDA uses optimistic locking by default; pessimistic locks are released per entity with unlock().
+    reviewed: false
+  - command: READ WRITE
+    targets: [Entity.lock()]
+    classification: Partial
+    note: ORDA uses optimistic locking by default; pessimistic locking is done per entity with lock().
+    reviewed: false
+  - command: UNLOAD RECORD
+    targets: [Entity.unlock()]
+    classification: Partial
+    note: Releases a pessimistic lock on the entity; memory is released when the entity is no longer referenced.
+    reviewed: false
+  - command: QUERY
+    targets: [DataClass.query()]
+    classification: Refactor
+    note: query() returns a new entity selection instead of changing the current selection.
+    reviewed: false
+  - command: QUERY SELECTION
+    targets: [EntitySelection.query()]
+    classification: Refactor
+    note: query() on an entity selection returns a new entity selection.
+    reviewed: false
+  - command: QUERY BY ATTRIBUTE
+    targets: [DataClass.query()]
+    classification: Refactor
+    note: Object attribute paths can be used directly in query strings.
+    reviewed: false
+  - command: QUERY SELECTION BY ATTRIBUTE
+    targets: [EntitySelection.query()]
+    classification: Refactor
+    note: Object attribute paths can be used directly in query strings.
+    reviewed: false
+  - command: QUERY BY FORMULA
+    targets: [DataClass.query()]
+    classification: Refactor
+    note: Pass a formula (or eval() in the query string) to query().
+    reviewed: false
+  - command: QUERY SELECTION BY FORMULA
+    targets: [EntitySelection.query()]
+    classification: Refactor
+    note: Pass a formula (or eval() in the query string) to query().
+    reviewed: false
+  - command: QUERY WITH ARRAY
+    targets: [DataClass.query()]
+    classification: Refactor
+    note: Use the IN operator with a collection placeholder.
+    reviewed: false
+  - command: QUERY SELECTION WITH ARRAY
+    targets: [EntitySelection.query()]
+    classification: Refactor
+    note: Use the IN operator with a collection placeholder.
+    reviewed: false
+  - command: Find in field
+    targets: [DataClass.query()]
+    classification: Partial
+    note: Query on the attribute value; record numbers are not returned.
+    reviewed: false
+  - command: ORDER BY
+    targets: [EntitySelection.orderBy()]
+    classification: Refactor
+    note: orderBy() returns a new ordered entity selection.
+    reviewed: false
+  - command: ORDER BY ATTRIBUTE
+    targets: [EntitySelection.orderBy()]
+    classification: Refactor
+    note: Object attribute paths can be used directly in orderBy().
+    reviewed: false
+  - command: ORDER BY FORMULA
+    targets: [EntitySelection.orderByFormula()]
+    classification: Refactor
+    note: orderByFormula() returns a new ordered entity selection.
+    reviewed: false
+  - command: Last query plan
+    targets: [EntitySelection.queryPlan]
+    classification: Refactor
+    note: "Pass queryPlan:true in the query settings and read the queryPlan property."
+    reviewed: false
+  - command: Last query path
+    targets: [EntitySelection.queryPath]
+    classification: Refactor
+    note: "Pass queryPath:true in the query settings and read the queryPath property."
+    reviewed: false
+  - command: DESCRIBE QUERY EXECUTION
+    targets: [EntitySelection.queryPlan, EntitySelection.queryPath]
+    classification: Partial
+    note: Description is requested per query in its settings rather than for the process.
+    reviewed: false
+  - command: ALL RECORDS
+    targets: [DataClass.all()]
+    classification: Refactor
+    note: all() returns an entity selection instead of changing the current selection.
+    reviewed: false
+  - command: DELETE SELECTION
+    targets: [EntitySelection.drop()]
+    classification: Refactor
+    note: drop() deletes the entities and returns the ones that could not be dropped.
+    reviewed: false
+  - command: FIRST RECORD
+    targets: [EntitySelection.first()]
+    classification: Refactor
+    note: first() returns the first entity; iterate with For each.
+    reviewed: false
+  - command: LAST RECORD
+    targets: [EntitySelection.last()]
+    classification: Refactor
+    note: last() returns the last entity.
+    reviewed: false
+  - command: NEXT RECORD
+    targets: [Entity.next()]
+    classification: Refactor
+    note: next() returns the next entity of the selection (prefer For each).
+    reviewed: false
+  - command: PREVIOUS RECORD
+    targets: [Entity.previous()]
+    classification: Refactor
+    note: previous() returns the previous entity of the selection.
+    reviewed: false
+  - command: GOTO SELECTED RECORD
+    targets: [EntitySelection.at()]
+    classification: Refactor
+    note: "Access entities by index with at() or $sel[index] (0-based)."
+    reviewed: false
+  - command: Records in selection
+    targets: [EntitySelection.length]
+    classification: Refactor
+    note: length returns the number of entities.
+    reviewed: false
+  - command: REDUCE SELECTION
+    targets: [EntitySelection.slice()]
+    classification: Refactor
+    note: slice() returns the first entities as a new entity selection.
+    reviewed: false
+  - command: Selected record number
+    targets: [Entity.indexOf()]
+    classification: Refactor
+    note: indexOf() returns the 0-based position of the entity in an entity selection.
+    reviewed: false
+  - command: TRUNCATE TABLE
+    targets: [DataClass.all(), EntitySelection.drop()]
+    classification: Partial
+    note: all().drop() deletes all entities one by one (triggers apply) rather than truncating the table.
+    reviewed: false
+  - command: ADD TO SET
+    targets: [EntitySelection.add()]
+    classification: Refactor
+    note: add() adds an entity to an alterable entity selection.
+    reviewed: false
+  - command: COPY SET
+    targets: [EntitySelection.copy()]
+    classification: Refactor
+    note: copy() returns a copy (shareable or alterable) of an entity selection.
+    reviewed: false
+  - command: CREATE EMPTY SET
+    targets: [DataClass.newSelection()]
+    classification: Refactor
+    note: newSelection() returns an empty alterable entity selection.
+    reviewed: false
+  - command: CREATE SET
+    targets: ["command:Create entity selection"]
+    classification: Refactor
+    note: "Entity selections are values: keep the entity selection in a variable instead of creating a named set."
+    reviewed: false
+  - command: DIFFERENCE
+    targets: [EntitySelection.minus()]
+    classification: Refactor
+    note: minus() returns a new entity selection.
+    reviewed: false
+  - command: INTERSECTION
+    targets: [EntitySelection.and()]
+    classification: Refactor
+    note: and() returns a new entity selection.
+    reviewed: false
+  - command: UNION
+    targets: [EntitySelection.or()]
+    classification: Refactor
+    note: or() returns a new entity selection.
+    reviewed: false
+  - command: Is in set
+    targets: [EntitySelection.contains()]
+    classification: Refactor
+    note: contains() tells whether an entity belongs to the entity selection.
+    reviewed: false
+  - command: Records in set
+    targets: [EntitySelection.length]
+    classification: Refactor
+    note: length returns the number of entities.
+    reviewed: false
+  - command: REMOVE FROM SET
+    targets: [EntitySelection.minus()]
+    classification: Refactor
+    note: minus() accepts an entity and returns a new entity selection without it.
+    reviewed: false
+  - command: USE SET
+    targets: ["command:USE ENTITY SELECTION"]
+    classification: Refactor
+    note: USE ENTITY SELECTION makes an entity selection the current selection when classic code still needs it.
+    reviewed: false
+  - command: COPY NAMED SELECTION
+    targets: [EntitySelection.copy()]
+    classification: Refactor
+    note: Keep a copy of the entity selection in a variable instead of a named selection.
+    reviewed: false
+  - command: USE NAMED SELECTION
+    targets: ["command:USE ENTITY SELECTION"]
+    classification: Refactor
+    note: USE ENTITY SELECTION makes an entity selection the current selection when classic code still needs it.
+    reviewed: false
+  - command: START TRANSACTION
+    targets: [DataStore.startTransaction()]
+    classification: Drop-in
+    note: Starts a transaction on the datastore (ds or a remote datastore).
+    reviewed: false
+  - command: VALIDATE TRANSACTION
+    targets: [DataStore.validateTransaction()]
+    classification: Drop-in
+    note: Validates the transaction on the datastore.
+    reviewed: false
+  - command: CANCEL TRANSACTION
+    targets: [DataStore.cancelTransaction()]
+    classification: Drop-in
+    note: Cancels the transaction on the datastore.
+    reviewed: false
+  - command: Table name
+    targets: [DataClass.getInfo()]
+    classification: Refactor
+    note: "getInfo() returns the dataclass name, table number and primary key."
+    reviewed: false
+  - command: GET TABLE PROPERTIES
+    targets: [DataClass.getInfo()]
+    classification: Partial
+    note: "getInfo() exposes name, number and primary key only."
+    reviewed: false
+  - command: SAVE RELATED ONE
+    targets: [Entity.save()]
+    classification: Refactor
+    note: Save the related entity itself ($entity.relation.save()).
+    reviewed: false

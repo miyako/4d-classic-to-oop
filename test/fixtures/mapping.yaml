@@ -1,0 +1,13 @@
+schema: 1
+ignore: []
+mappings:
+  - command: TEXT TO DOCUMENT
+    targets: [File.setText()]
+    classification: Drop-in
+    note: Writes text | in one call.
+    note_ja: 一度に書き込みます。
+  - command: OLD COMMAND
+    targets: [FileHandle.writeText(), File.open()]
+    classification: Refactor
+    note: Old.
+    reviewed: false
