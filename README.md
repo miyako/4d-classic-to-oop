@@ -6,6 +6,18 @@ commands that return objects (`File`, `Folder`, `New collection`, …). Each row
 
 Sample output (latest docs, English): [`output/classic-to-oop.md`](output/classic-to-oop.md).
 
+## Why this tool exists
+
+4D developers moving classic code to the OOP / ORDA APIs need a reliable list of which classic commands have a modern equivalent,
+and how hard each replacement is. The original requirements were:
+
+* A table of every classic command with a credible OOP equivalent. Each row links the classic command and the OOP target(s) to developer.4d.com.
+  Each row also has a classification (**Drop-in** / **Refactor** / **Partial**) and a one-sentence note. ORDA mappings go in a separate table.
+* Generated from the official docs sources (a local, read-only clone), not written by hand. It must be repeatable for any docs version
+  (`--docs-version`), language (`--lang en|ja`), minimum 4D release (`--floor`) and theme selection (`--themes`).
+* A curated, reviewable `mapping.yaml` as the source of truth. The first draft was AI-assisted, and every entry stays `reviewed: false` until a human checks it.
+* A coverage/diff report so the mapping can be kept current when new 4D releases add classes or functions.
+
 ## How it works
 
 ```
@@ -122,6 +134,16 @@ To review an entry, check it, edit it if needed and set `reviewed: true`.
    * **Commands with OOP candidates not in mapping.yaml**: add each one to `mappings` or `ignore`.
    * **New since …** and **Class members not referenced**: new APIs that may replace classic commands.
 3. Regenerate the sample: `npm run sample`.
+
+## Process / maintenance
+
+The full step-by-step process is in [`AGENTS.md`](AGENTS.md); [`.github/copilot-instructions.md`](.github/copilot-instructions.md) summarizes it.
+Humans and AI agents should both follow it. It covers:
+
+* the design decisions and hard rules (read-only docs clone; only humans set `reviewed: true`);
+* playbooks: regenerating the table, handling a new 4D release, applying review feedback, adding theme rules, fixing coverage errors;
+* a classification decision tree;
+* the definition of done.
 
 ## Development
 
