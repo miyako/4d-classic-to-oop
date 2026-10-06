@@ -3,7 +3,12 @@ import { getCatalog, indexCatalog, resolveTarget, missingReason } from './extrac
 import { isAvailableAt, normalizeRelease } from './release.js';
 import { ORDA_THEMES, ORDA_CLASSES } from './rules.js';
 
-const I18N = {
+export const CLASSIFICATION_LABELS = {
+  en: { 'Drop-in': 'Drop-in', Refactor: 'Refactor', Partial: 'Partial' },
+  ja: { 'Drop-in': 'そのまま置換', Refactor: 'リファクタリング要', Partial: '部分的' },
+};
+
+export const I18N = {
   en: {
     title: '4D classic commands with an OOP equivalent',
     intro: 'Classic 4D language commands and the class functions, properties or object-returning commands that can replace them.',
@@ -27,7 +32,7 @@ const I18N = {
     orda: 'ORDA (データベースアクセス)',
     cols: ['クラシックコマンド', 'テーマ', 'OOP 版', '分類', '備考'],
     legend:
-      '**Drop-in**: 同じセマンティクスでそのまま置き換え可能。**Refactor**: 同等の機能だがモデルが異なる (例: ドキュメント参照 → `FileHandle`、配列 → コレクション、カレントセレクション → エンティティセレクション)。**Partial**: OOP API はコマンドの一部のみをカバー。',
+      '**そのまま置換** (Drop-in): 同じセマンティクスで 1 対 1 に置き換え可能。**リファクタリング要** (Refactor): 同等の機能だがモデルが異なる (例: ドキュメント参照 → `FileHandle`、配列 → コレクション、カレントセレクション → エンティティセレクション)。**部分的** (Partial): OOP API はコマンドの一部の機能のみをカバー。',
     meta: (o) =>
       `ドキュメントバージョン: \`${o.version}\` · 言語: \`${o.lang}\`` +
       (o.floor ? ` · 下限: \`${o.floor}\` (4D ${o.floor} 以前で利用可能な OOP のみ)` : '') +
@@ -94,8 +99,10 @@ export function buildRows(mapping, opts) {
       command: cmd.name,
       url: cmd.url,
       theme: cmd.theme,
+      themeLabel: (lang !== 'en' && cmd.themeLabel) || cmd.theme,
       targets,
       classification: m.classification,
+      classificationLabel: (CLASSIFICATION_LABELS[lang] || CLASSIFICATION_LABELS.en)[m.classification] || m.classification,
       note: (lang === 'ja' && m.note_ja) || m.note || '',
       orda,
       deprecated: !!deprecated,
@@ -113,7 +120,7 @@ function table(rows, t, { showSince }) {
     const targets = r.targets
       .map((x) => link(x.label, x.url) + (showSince && x.addedIn ? ` <sub>${t.since ? t.since + ' ' : ''}${x.addedIn}</sub>` : ''))
       .join('<br>');
-    out.push(`| ${cmd} | ${esc(r.theme)} | ${targets} | ${r.classification} | ${esc(r.note)} |`);
+    out.push(`| ${cmd} | ${esc(r.themeLabel)} | ${targets} | ${esc(r.classificationLabel)} | ${esc(r.note)} |`);
   }
   return out.join('\n');
 }

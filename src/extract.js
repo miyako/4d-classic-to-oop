@@ -261,8 +261,29 @@ function extractMembers(root, base) {
   return { classes, members };
 }
 
-/** Overlay localized summaries (same relative paths / REF keys) onto an English catalog. */
-function overlayLang(catalog, locRoot) {
+/** English theme title -> localized theme title, from commands/theme/*.md index pages (same file names). */
+export function themeLabels(enRoot, locRoot) {
+  const map = new Map();
+  const dir = path.join(enRoot, 'commands', 'theme');
+  if (!fs.existsSync(dir)) return map;
+  for (const n of fs.readdirSync(dir).filter((x) => x.endsWith('.md'))) {
+    const loc = readIfExists(path.join(locRoot, 'commands', 'theme', n));
+    if (!loc) continue;
+    const en = parseFrontMatter(read(path.join(dir, n))).data;
+    const ja = parseFrontMatter(loc).data;
+    const enTitle = en.title || en.sidebar_label;
+    const locTitle = ja.title || ja.sidebar_label;
+    if (enTitle && locTitle) {
+      map.set(String(enTitle), String(locTitle));
+      map.set(n.replace(/\.md$/, '').replace(/_/g, ' '), String(locTitle));
+    }
+  }
+  return map;
+}
+
+/** Overlay localized summaries (same relative paths / REF keys) and theme labels onto an English catalog. */
+function overlayLang(catalog, locRoot, labels = new Map()) {
+  for (const c of catalog.commands) if (labels.has(c.theme)) c.themeLabel = labels.get(c.theme);
   if (!fs.existsSync(locRoot)) return catalog;
   for (const c of catalog.commands) {
     const t = readIfExists(path.join(locRoot, c.file));
@@ -294,7 +315,12 @@ export function extractCatalog({ docsRoot, version = 'latest', lang = 'en' }) {
   const commands = extractCommands(root, files, base);
   const { classes, members } = extractMembers(root, base);
   const catalog = { docsVersion: version || 'latest', lang, urlBase: base, commands, classes, members };
-  if (lang !== 'en') overlayLang(catalog, contentDir(docsRoot, version, lang));
+  if (lang !== 'en') {
+    // Theme index pages only exist in recent versions: fall back to the latest ones.
+    let labels = themeLabels(root, contentDir(docsRoot, version, lang));
+    if (!labels.size) labels = themeLabels(contentDir(docsRoot, 'latest', 'en'), contentDir(docsRoot, 'latest', lang));
+    overlayLang(catalog, contentDir(docsRoot, version, lang), labels);
+  }
   return catalog;
 }
 
