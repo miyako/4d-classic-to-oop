@@ -4,7 +4,10 @@
 object-oriented equivalent: class functions or properties (`File.setText()`, `EntitySelection.orderBy()`, …) or
 commands that return objects (`File`, `Folder`, `New collection`, …). Each row has links to the docs, a classification and a short note.
 
-Sample output (latest docs, English): [`output/classic-to-oop.md`](output/classic-to-oop.md).
+**Web site:** <https://miyako.github.io/4d-classic-to-oop/> (English) · <https://miyako.github.io/4d-classic-to-oop/ja/> (日本語).
+The site has search, filters, sortable columns, and is rebuilt from the upstream docs on every push to `main`.
+
+Sample output (latest docs): [`output/classic-to-oop.md`](output/classic-to-oop.md) (English) · [`output/classic-to-oop.ja.md`](output/classic-to-oop.ja.md) (日本語).
 
 ## Why this tool exists
 
@@ -24,8 +27,9 @@ and how hard each replacement is. The original requirements were:
 4D docs clone (read-only) ──extract──▶ catalog (commands + class members, with History "addedIn")
                                  │
                                  ├─candidates──▶ heuristic proposals (to help curate)
-mapping.yaml (curated) ──────────┼─render──────▶ Markdown table (general + ORDA sections)
-                                 └─coverage────▶ what is not covered yet / invalid targets
+mapping.yaml (curated) ──────────┼─render──────▶ Markdown table (general + ORDA sections), en or ja
+                                 ├─site────────▶ static web site (en + ja) + data.json → GitHub Pages
+                                 └─coverage────▶ what is not covered yet / invalid targets / missing note_ja
 ```
 
 * **extract** parses the [4D docs](https://github.com/4D/docs) Docusaurus sources:
@@ -39,6 +43,10 @@ mapping.yaml (curated) ──────────┼─render─────
   (a command page linking to a class member, or a class member linking to a command) and name similarity.
 * **mapping.yaml** is the curated source of truth (see below).
 * **render** combines `mapping.yaml` with the catalog of the requested docs version and language.
+  With `--lang ja` it uses `note_ja`, Japanese theme names from the ja `commands/theme` index pages, and Japanese classification labels.
+  The labels are そのまま置換 (Drop-in), リファクタリング要 (Refactor) and 部分的 (Partial).
+  Links point to `https://developer.4d.com/docs/ja/...`.
+* **site** builds the same rows as a static web page (see [Web site](#web-site-github-pages)).
 * **coverage** (alias **diff**) lists commands that have candidates but are neither mapped nor ignored, plus class members
   that no mapping references. It also checks that every target exists in the selected docs version, so it can run in CI.
 
@@ -59,9 +67,14 @@ export C2O_DOCS_ROOT=/path/to/4D/docs     # or pass --docs-root every time (defa
 # Markdown table (stdout or --out)
 node bin/c2o.js render --out output/classic-to-oop.md
 node bin/c2o.js render --floor "19 R7"                 # only OOP targets available in 4D 19 R7 or earlier
+node bin/c2o.js render --lang ja --out output/classic-to-oop.ja.md   # Japanese notes, themes and labels
 node bin/c2o.js render --docs-version 21 --lang ja     # links to https://developer.4d.com/docs/ja/21/...
 node bin/c2o.js render --themes "System Documents,BLOB" --show-since
 node bin/c2o.js render --include-deprecated
+npm run sample                                         # regenerate both output/*.md files
+
+# Web site (site/index.html, site/ja/index.html, data.json)
+node bin/c2o.js site --out site [--floor "20"] [--docs-version 21]
 
 # Maintenance
 node bin/c2o.js coverage                               # Markdown report; exit code 1 if a target is invalid
@@ -77,16 +90,18 @@ node bin/c2o.js versions
 | `--docs-root <dir>` | all | Path to the 4D docs clone (default: `$C2O_DOCS_ROOT`, then `../docs`) |
 | `--docs-version <v>` | all | `latest` (default) or a version from `versions.json` (`21-R4`, `21-R3`, `21`, `20`, `19`, `18`). The catalog is built from that version and links use `/docs/<v>/`. |
 | `--lang <en\|ja>` | all | Link language (`/docs/ja/...`), Japanese summaries/headers, `note_ja` when present |
-| `--floor <release>` | render | Drop OOP targets added after `<release>`, then drop commands that have no target left |
-| `--themes <a,b>` | render | Only include these command themes |
-| `--include-deprecated` | render | Include commands flagged deprecated (detected heuristically or set with `deprecated:` in the mapping) |
+| `--floor <release>` | render, site | Drop OOP targets added after `<release>`, then drop commands that have no target left |
+| `--themes <a,b>` | render, site | Only include these command themes |
+| `--include-deprecated` | render, site | Include commands flagged deprecated (detected heuristically or set with `deprecated:` in the mapping) |
 | `--show-since` | render | Show the release each OOP target was added in |
 | `--since <release>` | coverage | List commands and members added after `<release>` and whether they are mapped |
 | `--all` | coverage, candidates | Coverage: list every untriaged command in OOP-related themes and members of all classes. Candidates: include commands already in `mapping.yaml` |
 | `--strict` | coverage | Return a non-zero exit code on warnings too |
 | `--format <md\|json>` | coverage, candidates | Output format |
 | `--mapping <file>` | render, coverage, candidates | Mapping file (default: `mapping.yaml`) |
-| `--out <file>` | all | Write to a file instead of stdout |
+| `--out <file>` | all | Write to a file instead of stdout (`site`: output folder, default `site`) |
+| `--repo-url <url>` | site | Link back to this repository (default: from `$GITHUB_REPOSITORY`, else this repo) |
+| `--docs-repo <owner/name>` | site | Docs repository used to link the docs commit (default `doc4d/docs`) |
 
 Notes on docs versions:
 
@@ -94,6 +109,8 @@ Notes on docs versions:
   Version 18 has no class pages either.
 * If a target was added after the selected docs version (for example `File.open()`, added in 19 R7, with `--docs-version 19`), render drops it
   without a warning, and coverage lists it under "Targets added after docs version".
+* Japanese pages live under `https://developer.4d.com/docs/ja/` (for example `/docs/ja/21/API/FileClass`).
+  `https://developer.4d.com/ja/docs/...` returns 404.
 * The local clone can be ahead of the website. For example, `21-R4` may already exist locally before https://developer.4d.com/docs/21-R4/ is published.
 
 ## mapping.yaml
@@ -107,7 +124,7 @@ mappings:
     targets: [File.setText()]          # Class.function(), Class.property, 4D.Class.new(), command:Name
     classification: Drop-in            # Drop-in | Refactor | Partial
     note: Writes text to a file in one call; charset and line-break mode are parameters.
-    note_ja: ...                       # optional
+    note_ja: 一度の呼び出しでテキストをファイルに書き込みます。  # required: coverage warns when missing
     orda: false                        # optional: force section (default: ORDA themes / ORDA classes)
     deprecated: false                  # optional: override the detected flag
     reviewed: false                    # rendered with † until reviewed
@@ -129,11 +146,38 @@ To review an entry, check it, edit it if needed and set `reviewed: true`.
 ### Keeping it current for a new 4D release
 
 1. Update the docs clone (`git pull`).
-2. Run `node bin/c2o.js coverage --since "<previous release>"` and look at:
+2. Run `node bin/c2o.js coverage --since "<previous release>"` and look at the following. Every new entry needs a `note_ja`;
+   coverage warns `missing note_ja` otherwise.
    * **Errors**: targets that were renamed or removed.
    * **Commands with OOP candidates not in mapping.yaml**: add each one to `mappings` or `ignore`.
    * **New since …** and **Class members not referenced**: new APIs that may replace classic commands.
-3. Regenerate the sample: `npm run sample`.
+3. Regenerate the samples: `npm run sample`.
+
+## Web site (GitHub Pages)
+
+`node bin/c2o.js site --out site` writes a dependency-free static site:
+
+* `site/index.html` and `site/ja/index.html`, with all CSS/JS inline and no CDN.
+* `site/data.json` and `site/ja/data.json`, with the same rows for reuse.
+
+The pages have:
+
+* a language switcher;
+* text search;
+* theme, classification, General/ORDA and "unreviewed only" filters (kept in the URL query string);
+* sortable columns;
+* colored classification badges and a † marker on unreviewed entries;
+* the generation metadata: docs version, floor, date and the docs commit.
+
+Deployment is done by [`.github/workflows/pages.yml`](.github/workflows/pages.yml):
+
+* It runs on every push to `main`, or manually via **Actions → Pages → Run workflow**.
+  A manual run can override `docs_repo` (default `doc4d/docs`), `docs_ref`, `docs_version` and `floor`.
+* It checks out this repo plus a shallow, sparse (Markdown-only) checkout of the docs.
+* It then runs `npm ci`, `npm test` and `coverage` (invalid targets fail the build), builds the site and deploys it with `actions/deploy-pages`.
+* Pages is configured with source "GitHub Actions".
+
+To preview locally: `npm run site && (cd site && python3 -m http.server 8000)` and open <http://localhost:8000/>.
 
 ## Process / maintenance
 
@@ -152,4 +196,4 @@ npm test          # node:test: release parsing/ordering, markdown parsing, extra
 ```
 
 Code layout: `src/release.js` (4D release parsing), `src/markdown.js` (front matter, History, REF blocks),
-`src/extract.js` (catalog), `src/rules.js` and `src/candidates.js` (heuristics), `src/mapping.js`, `src/render.js`, `src/coverage.js`, `bin/c2o.js` (CLI).
+`src/extract.js` (catalog), `src/rules.js` and `src/candidates.js` (heuristics), `src/mapping.js`, `src/render.js`, `src/coverage.js`, `src/site.js` (static site), `bin/c2o.js` (CLI).
