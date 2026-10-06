@@ -147,9 +147,11 @@ function extractCommands(root, files, base) {
     const refs = parseRefs(body);
     const ref = refs.get(`_command_.${name}`) || [...refs.entries()].find(([k]) => k.startsWith('_command_.'))?.[1] || {};
     const links = extractLinks(body);
+    const num = body.match(/^\|\s*Command number\s*\|\s*(\d+)\s*\|/m);
     commands.push({
       name,
       id: sm[1],
+      number: num ? Number(num[1]) : null,
       theme: legacy ? legacy[1] : themes.get(sm[1]) || (rel.startsWith('commands-legacy/') ? 'Database Methods' : 'Other'),
       file: rel,
       url: base + slug.replace(/^\//, ''),
@@ -214,8 +216,10 @@ function extractMembers(root, base) {
     const classAdded = addedInFromHistory(classHistory);
     classes.push({ name: cls, page, url: pageUrl, file: `API/${page}.md` });
     const seen = new Set();
-    const add = (key, anchor) => {
+    const add = (key, tableAnchor) => {
       const info = index.get(key);
+      // A member documented on this page: trust its own heading (summary-table links can be wrong, e.g. findIndex -> #find).
+      const anchor = (info?.page === page && info.anchor) || tableAnchor;
       const name = memberNameFromKey(key);
       if (!name || seen.has(name)) return;
       seen.add(name);
