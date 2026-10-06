@@ -1,0 +1,99 @@
+# Build the static site (en + ja) from mapping.yaml and the 4D docs, then deploy it to GitHub Pages.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      docs_repo:
+        description: 4D docs repository (owner/name)
+        default: doc4d/docs
+      docs_ref:
+        description: Branch, tag or SHA of the docs repository
+        default: main
+      docs_version:
+        description: Docs version (latest, 21-R3, 21, ...)
+        default: latest
+      floor:
+        description: Optional floor release, e.g. "20 R2" (empty = no floor)
+        default: ''
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  DOCS_REPO: ${{ inputs.docs_repo || 'doc4d/docs' }}
+  DOCS_REF: ${{ inputs.docs_ref || 'main' }}
+  DOCS_VERSION: ${{ inputs.docs_version || 'latest' }}
+  FLOOR: ${{ inputs.floor || '' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Shallow, sparse checkout of the docs: only Markdown sources and preprocessing.conf (no images).
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.DOCS_REPO }}
+          ref: ${{ env.DOCS_REF }}
+          path: 4d-docs
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /versions.json
+            /docs/**/*.md
+            /docs/preprocessing.conf
+            /versioned_docs/**/*.md
+            /versioned_docs/**/preprocessing.conf
+            /i18n/ja/docusaurus-plugin-content-docs/**/*.md
+            /i18n/ja/docusaurus-plugin-content-docs/**/preprocessing.conf
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+
+      - name: Coverage (fails on invalid targets)
+        env:
+          C2O_DOCS_ROOT: ${{ github.workspace }}/4d-docs
+        run: |
+          node bin/c2o.js coverage --docs-version "$DOCS_VERSION" --out build/coverage.md
+          {
+            echo "## Coverage"
+            sed -n '1,/^## Class members not referenced/p' build/coverage.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build site
+        env:
+          C2O_DOCS_ROOT: ${{ github.workspace }}/4d-docs
+        run: |
+          args=(--docs-version "$DOCS_VERSION" --docs-repo "$DOCS_REPO" --out site)
+          if [ -n "$FLOOR" ]; then args+=(--floor "$FLOOR"); fi
+          node bin/c2o.js site "${args[@]}"
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

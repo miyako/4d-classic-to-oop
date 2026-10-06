@@ -8,6 +8,7 @@ import { proposeCandidates, candidatesToMarkdown } from '../src/candidates.js';
 import { loadMapping } from '../src/mapping.js';
 import { renderMarkdown } from '../src/render.js';
 import { coverageReport, coverageToMarkdown } from '../src/coverage.js';
+import { buildSite, DEFAULT_REPO_URL, DEFAULT_DOCS_REPO } from '../src/site.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -20,6 +21,7 @@ Commands:
   candidates   Propose OOP targets per command (heuristics) to help curate mapping.yaml
   render       Generate the Markdown table from mapping.yaml
   coverage     Report docs items not covered by mapping.yaml and validate targets (alias: diff)
+  site         Build the static web site (en + ja) into --out (default: site/)
   versions     List docs versions available in --docs-root
 
 Common options:
@@ -39,6 +41,12 @@ render:
 candidates:
   --min-score <n>        Minimum score (default 0.5)
   --all                  Include commands already in mapping.yaml
+
+site:
+  --out <dir>            Output folder (default: site). Writes index.html, data.json, ja/index.html, ja/data.json
+  --floor, --docs-version, --themes, --include-deprecated   Same as render
+  --repo-url <url>       Link back to this repository (default: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY or ${DEFAULT_REPO_URL})
+  --docs-repo <o/r>      GitHub repo of the docs, used to link the docs commit (default: ${DEFAULT_DOCS_REPO})
 
 coverage:
   --since <release>      Also list commands/members added after <release>
@@ -69,6 +77,8 @@ function main(argv) {
       since: { type: 'string' },
       all: { type: 'boolean', default: false },
       strict: { type: 'boolean', default: false },
+      'repo-url': { type: 'string' },
+      'docs-repo': { type: 'string', default: DEFAULT_DOCS_REPO },
       help: { type: 'boolean', short: 'h', default: false },
     },
   });
@@ -125,6 +135,26 @@ function main(argv) {
       });
       warn(warnings);
       write(markdown);
+      return 0;
+    }
+    case 'site': {
+      const mapping = loadMapping(o.mapping);
+      const gh = process.env.GITHUB_REPOSITORY ? `${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${process.env.GITHUB_REPOSITORY}` : null;
+      const { files, warnings } = buildSite(mapping, {
+        docsRoot,
+        version,
+        outDir: o.out || 'site',
+        floor: o.floor,
+        themes: o.themes ? o.themes.split(',').map((s) => s.trim()).filter(Boolean) : null,
+        includeDeprecated: o['include-deprecated'],
+        repoUrl: o['repo-url'] || gh || DEFAULT_REPO_URL,
+        docsRepo: o['docs-repo'],
+      });
+      warn(warnings);
+      files.forEach((f) => {
+        const rel = path.relative(process.cwd(), f);
+        process.stderr.write(`Wrote ${rel.startsWith('..') ? f : rel}\n`);
+      });
       return 0;
     }
     case 'coverage':

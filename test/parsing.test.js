@@ -7,6 +7,9 @@ import { extractCatalog, indexCatalog, resolveTarget, urlBase } from '../src/ext
 import { loadMapping, validateMapping } from '../src/mapping.js';
 import { renderMarkdown } from '../src/render.js';
 import { coverageReport } from '../src/coverage.js';
+import { buildSite } from '../src/site.js';
+import fs from 'node:fs';
+import os from 'node:os';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const docsRoot = path.join(here, 'fixtures', 'docs');
@@ -83,6 +86,35 @@ test('render applies floor, deprecation and escaping', () => {
   assert.deepEqual(rows.map((r) => r.command), ['TEXT TO DOCUMENT']); // FileHandle/open are 19 R7
   ({ markdown } = renderMarkdown(mapping, { docsRoot, lang: 'ja' }));
   assert.match(markdown, /一度に書き込みます。/);
+  assert.match(markdown, /\| システムドキュメント \| /); // localized theme from commands/theme index
+  assert.match(markdown, /\| そのまま置換 \| /); // localized classification
+  assert.match(markdown, /https:\/\/developer\.4d\.com\/docs\/ja\/commands\/text-to-document/);
+});
+
+test('coverage warns about missing note_ja', () => {
+  const r = coverageReport(loadMapping(mappingFile), { docsRoot });
+  assert.ok(r.warnings.includes('OLD COMMAND: missing note_ja (Japanese translation of note)'));
+  assert.ok(!r.warnings.some((w) => w.startsWith('TEXT TO DOCUMENT: missing note_ja')));
+});
+
+test('site builds en and ja pages with embedded data', () => {
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'c2o-site-'));
+  try {
+    buildSite(loadMapping(mappingFile), { docsRoot, outDir, docsCommit: 'abc1234def', generatedAt: '2026-01-01T00:00:00.000Z' });
+    const en = JSON.parse(fs.readFileSync(path.join(outDir, 'data.json'), 'utf8'));
+    const ja = JSON.parse(fs.readFileSync(path.join(outDir, 'ja', 'data.json'), 'utf8'));
+    assert.equal(en.meta.docsCommit, 'abc1234def');
+    assert.deepEqual(en.rows.map((r) => [r.command, r.section, r.classification]), [['TEXT TO DOCUMENT', 'general', 'Drop-in']]);
+    assert.equal(ja.rows[0].classificationLabel, 'そのまま置換');
+    assert.equal(ja.rows[0].note, '一度に書き込みます。');
+    const html = fs.readFileSync(path.join(outDir, 'ja', 'index.html'), 'utf8');
+    assert.match(html, /<html lang="ja">/);
+    assert.match(html, /href="\.\.\/" hreflang="en"/);
+    assert.ok(!/<script[^>]+src=/.test(html), 'no external scripts');
+    assert.ok(fs.existsSync(path.join(outDir, '.nojekyll')));
+  } finally {
+    fs.rmSync(outDir, { recursive: true, force: true });
+  }
 });
 
 test('coverage reports unreferenced members and bad targets', () => {

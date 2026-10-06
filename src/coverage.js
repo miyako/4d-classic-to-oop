@@ -21,6 +21,7 @@ export function coverageReport(mapping, { docsRoot, version = 'latest', since = 
   const referenced = new Set();
   for (const m of mapping.mappings) {
     mapped.add(m.command.toLowerCase());
+    if (m.note && !String(m.note_ja || '').trim()) warnings.push(`${m.command}: missing note_ja (Japanese translation of note)`);
     if (!cmdIdx.byCommand.has(m.command.toLowerCase())) errors.push(`unknown command: ${m.command}`);
     for (const t of m.targets) {
       const r = /^command:/i.test(t) ? resolveTarget(t, cmdIdx) : resolveTarget(t, memIdx);

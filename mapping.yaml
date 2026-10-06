@@ -8,7 +8,8 @@
 #                   Refactor = equivalent feature with a different model (document ref -> FileHandle,
 #                              arrays -> collections, current selection -> entity selection...)
 #                   Partial  = the OOP API covers only part of the command
-#   note:           one short sentence (note_ja: optional Japanese note used with --lang ja)
+#   note:           one short sentence (English)
+#   note_ja:        the same sentence in Japanese (required when note is set; used with --lang ja)
 #   orda:           optional, force the ORDA (true) or general (false) section; default from theme/targets
 #   deprecated:     optional override of the deprecation flag detected from the docs
 #   reviewed:       false until a human has checked the entry
@@ -107,126 +108,151 @@ mappings:
     targets: [File.open(), FileHandle.writeText()]
     classification: Refactor
     note: "Use File.open(\"append\") to get a FileHandle positioned at the end of the file instead of a document reference."
+    note_ja: "File.open(\"append\") で末尾に位置付けられた FileHandle オブジェクトを取得し、ドキュメント参照の代わりに使用します。"
     reviewed: false
   - command: Convert path POSIX to system
     targets: [File.platformPath, Folder.platformPath]
     classification: Drop-in
     note: File(posixPath).platformPath (or Folder(...) for folders) returns the platform path; the path must be absolute or filesystem-based.
+    note_ja: "File(posixPath).platformPath (フォルダーの場合は Folder(...)) がプラットフォームパスを返します。パスは絶対パスまたはファイルシステムパスである必要があります。"
     reviewed: false
   - command: Convert path system to POSIX
     targets: [File.path, Folder.path]
     classification: Drop-in
     note: File(platformPath; fk platform path).path returns the POSIX path.
+    note_ja: "File(platformPath; fk platform path).path が POSIX パスを返します。"
     reviewed: false
   - command: COPY DOCUMENT
     targets: [File.copyTo(), Folder.copyTo()]
     classification: Drop-in
     note: copyTo() takes a destination Folder object plus optional new name and overwrite flag and returns the copy.
+    note_ja: "copyTo() は保存先の Folder オブジェクトと、任意で新しい名前と上書きフラグを受け取り、コピーを返します。"
     reviewed: false
   - command: CREATE ALIAS
     targets: [File.createAlias(), Folder.createAlias()]
     classification: Drop-in
     note: Creates an alias (macOS) or shortcut (Windows) in a destination Folder object.
+    note_ja: "保存先の Folder オブジェクト内にエイリアス (macOS) またはショートカット (Windows) を作成します。"
     reviewed: false
   - command: Create document
     targets: [File.create(), File.open()]
     classification: Refactor
     note: "Create the file with File.create() and get a FileHandle with File.open(\"write\") instead of a document reference."
+    note_ja: "ドキュメント参照の代わりに、File.create() でファイルを作成し File.open(\"write\") で FileHandle オブジェクトを取得します。"
     reviewed: false
   - command: CREATE FOLDER
     targets: [Folder.create()]
     classification: Drop-in
     note: Folder(path).create() creates the folder and any missing parent folders.
+    note_ja: "Folder(path).create() はフォルダーと、存在しない親フォルダーを作成します。"
     reviewed: false
   - command: DELETE DOCUMENT
     targets: [File.delete()]
     classification: Drop-in
     note: Deletes the file referenced by the File object.
+    note_ja: "File オブジェクトが参照するファイルを削除します。"
     reviewed: false
   - command: DELETE FOLDER
     targets: [Folder.delete()]
     classification: Drop-in
     note: Supports the same Delete only if empty / Delete with contents options.
+    note_ja: "「空の場合のみ削除」と「中身ごと削除」の同じオプションをサポートします。"
     reviewed: false
   - command: DOCUMENT LIST
     targets: [Folder.files()]
     classification: Refactor
     note: Returns a collection of File objects instead of filling a text array of names.
+    note_ja: "名前のテキスト配列を作成する代わりに、File オブジェクトのコレクションを返します。"
     reviewed: false
   - command: Document to text
     targets: [File.getText()]
     classification: Drop-in
     note: Reads the whole file as text with optional charset and line-break mode.
+    note_ja: "任意の文字セットと改行モードを指定して、ファイル全体をテキストとして読み込みます。"
     reviewed: false
   - command: FOLDER LIST
     targets: [Folder.folders()]
     classification: Refactor
     note: Returns a collection of Folder objects instead of filling a text array of names.
+    note_ja: "名前のテキスト配列を作成する代わりに、Folder オブジェクトのコレクションを返します。"
     reviewed: false
   - command: GET DOCUMENT ICON
     targets: [File.getIcon(), Folder.getIcon()]
     classification: Drop-in
     note: Returns the icon picture of the file or folder.
+    note_ja: "ファイルまたはフォルダーのアイコンピクチャーを返します。"
     reviewed: false
   - command: Get document position
     targets: [FileHandle.offset]
     classification: Refactor
     note: Read the offset property of the FileHandle instead of passing a document reference.
+    note_ja: "ドキュメント参照を渡す代わりに、FileHandle オブジェクトの offset プロパティを読み出します。"
     reviewed: false
   - command: GET DOCUMENT PROPERTIES
     targets: [File.creationDate, File.creationTime, File.modificationDate, File.modificationTime, File.isWritable, File.hidden]
     classification: Refactor
     note: Each document property is exposed as a read-only property of the File object.
+    note_ja: "各ドキュメントプロパティは File オブジェクトの読み取り専用プロパティとして提供されます。"
     reviewed: false
   - command: Get document size
     targets: [File.size, FileHandle.getSize()]
     classification: Drop-in
     note: Use File.size for a closed file or FileHandle.getSize() for an open one.
+    note_ja: "閉じたファイルには File.size、開いているファイルには FileHandle.getSize() を使用します。"
     reviewed: false
   - command: MOVE DOCUMENT
     targets: [File.moveTo(), File.rename()]
     classification: Drop-in
     note: moveTo() moves (and optionally renames) the file; rename() renames it in place.
+    note_ja: "moveTo() はファイルを移動 (および任意で名前を変更) し、rename() はその場で名前を変更します。"
     reviewed: false
   - command: Object to path
     targets: [Folder.file(), Folder.folder()]
     classification: Refactor
     note: Build paths by navigating from a parent Folder object rather than assembling a path from an object.
+    note_ja: "オブジェクトからパスを組み立てる代わりに、親 Folder オブジェクトから辿ってパスを構築します。"
     reviewed: false
   - command: Open document
     targets: [File.open()]
     classification: Refactor
     note: "File.open() returns a FileHandle object (read, write or append mode) instead of a document reference; there is no file dialog."
+    note_ja: "File.open() はドキュメント参照ではなく FileHandle オブジェクト (読み込み・書き込み・追加モード) を返し、ファイルダイアログはありません。"
     reviewed: false
   - command: Path to object
     targets: [File.name, File.extension, File.parent, File.isFolder]
     classification: Refactor
     note: The path components are properties of the File/Folder object.
+    note_ja: "パスの構成要素は File/Folder オブジェクトのプロパティとして取得できます。"
     reviewed: false
   - command: RESOLVE ALIAS
     targets: [File.original, Folder.original]
     classification: Drop-in
     note: original returns the target of an alias or shortcut.
+    note_ja: "original はエイリアスまたはショートカットの参照先を返します。"
     reviewed: false
   - command: SET DOCUMENT POSITION
     targets: [FileHandle.offset]
     classification: Refactor
     note: Assign the offset property of the FileHandle instead of passing a document reference.
+    note_ja: "ドキュメント参照を渡す代わりに、FileHandle オブジェクトの offset プロパティに値を代入します。"
     reviewed: false
   - command: SET DOCUMENT SIZE
     targets: [FileHandle.setSize()]
     classification: Refactor
     note: Resizes the file through its FileHandle.
+    note_ja: "FileHandle オブジェクトを介してファイルのサイズを変更します。"
     reviewed: false
   - command: Test path name
     targets: [File.exists, Folder.exists, File.isFolder]
     classification: Refactor
     note: Check exists / isFile / isFolder on a File or Folder object instead of decoding a type code.
+    note_ja: "タイプコードを判定する代わりに、File/Folder オブジェクトの exists・isFile・isFolder を確認します。"
     reviewed: false
   - command: TEXT TO DOCUMENT
     targets: [File.setText()]
     classification: Drop-in
     note: Writes text to a file in one call with optional charset and line-break mode.
+    note_ja: "任意の文字セットと改行モードを指定して、1 回の呼び出しでテキストをファイルに書き込みます。"
     reviewed: false
 
   # --- Communications ---
@@ -234,21 +260,25 @@ mappings:
     targets: [FileHandle.readText(), FileHandle.readLine(), FileHandle.readBlob()]
     classification: Refactor
     note: "For documents, read from a FileHandle (by length, delimiter or line) instead of a document reference; serial ports are not covered."
+    note_ja: "ドキュメントの場合、ドキュメント参照の代わりに FileHandle オブジェクトから (長さ・区切り文字・行単位で) 読み込みます。シリアルポートは対象外です。"
     reviewed: false
   - command: SEND PACKET
     targets: [FileHandle.writeText(), FileHandle.writeBlob()]
     classification: Refactor
     note: "For documents, write through a FileHandle object instead of a document reference; serial ports are not covered."
+    note_ja: "ドキュメントの場合、ドキュメント参照の代わりに FileHandle オブジェクトを介して書き込みます。シリアルポートは対象外です。"
     reviewed: false
   - command: SET CHANNEL
     targets: [File.open()]
     classification: Partial
     note: Only the document use of SET CHANNEL maps to File.open(); serial port channels have no OOP equivalent.
+    note_ja: "SET CHANNEL のドキュメント用途のみが File.open() に対応し、シリアルポートのチャンネルに OOP 版はありません。"
     reviewed: false
   - command: USE CHARACTER SET
     targets: [File.open(), FileHandle.charset]
     classification: Partial
     note: The charset is set per FileHandle when calling File.open(); it does not apply globally.
+    note_ja: "文字セットは File.open() の呼び出し時に FileHandle ごとに設定され、グローバルには適用されません。"
     reviewed: false
 
   # --- BLOB ---
@@ -256,31 +286,37 @@ mappings:
     targets: [Blob.size]
     classification: Refactor
     note: 4D.Blob objects are immutable; size is a read-only property.
+    note_ja: "4D.Blob オブジェクトは変更不可であり、size は読み取り専用プロパティです。"
     reviewed: false
   - command: BLOB TO DOCUMENT
     targets: [File.setContent()]
     classification: Drop-in
     note: Writes a BLOB (or 4D.Blob) as the whole file content.
+    note_ja: "BLOB (または 4D.Blob) をファイルの内容全体として書き込みます。"
     reviewed: false
   - command: COPY BLOB
     targets: [Blob.slice()]
     classification: Partial
     note: slice() returns a new 4D.Blob with a byte range; copying into an existing BLOB at an offset is not supported.
+    note_ja: "slice() はバイト範囲を持つ新しい 4D.Blob を返します。既存の BLOB の指定オフセットへのコピーはサポートされていません。"
     reviewed: false
   - command: DECRYPT BLOB
     targets: [CryptoKey.decrypt()]
     classification: Partial
     note: "CryptoKey decrypts Base64 text with an RSA key, not BLOBs encrypted with ENCRYPT BLOB."
+    note_ja: "CryptoKey は RSA 鍵で Base64 テキストを復号するもので、ENCRYPT BLOB で暗号化された BLOB は対象外です。"
     reviewed: false
   - command: DOCUMENT TO BLOB
     targets: [File.getContent()]
     classification: Drop-in
     note: Returns the whole file content as a 4D.Blob.
+    note_ja: "ファイルの内容全体を 4D.Blob として返します。"
     reviewed: false
   - command: ENCRYPT BLOB
     targets: [CryptoKey.encrypt()]
     classification: Partial
     note: "CryptoKey encrypts text (RSA, Base64 output) rather than BLOBs."
+    note_ja: "CryptoKey は BLOB ではなくテキストを暗号化します (RSA、Base64 出力)。"
     reviewed: false
 
   # --- Arrays ---
@@ -288,101 +324,121 @@ mappings:
     targets: [Collection.push()]
     classification: Refactor
     note: Arrays become collections; push() appends one or more values.
+    note_ja: "配列はコレクションに置き換わり、push() で 1 つ以上の値を末尾に追加します。"
     reviewed: false
   - command: ARRAY BLOB
     targets: ["command:New collection", Collection.resize()]
     classification: Refactor
     note: "Use an untyped collection (New collection or []) instead of a typed array."
+    note_ja: "型指定された配列の代わりに、型のないコレクション (New collection または []) を使用します。"
     reviewed: false
   - command: ARRAY BOOLEAN
     targets: ["command:New collection", Collection.resize()]
     classification: Refactor
     note: "Use an untyped collection (New collection or []) instead of a typed array."
+    note_ja: "型指定された配列の代わりに、型のないコレクション (New collection または []) を使用します。"
     reviewed: false
   - command: ARRAY DATE
     targets: ["command:New collection", Collection.resize()]
     classification: Refactor
     note: "Use an untyped collection (New collection or []) instead of a typed array."
+    note_ja: "型指定された配列の代わりに、型のないコレクション (New collection または []) を使用します。"
     reviewed: false
   - command: ARRAY INTEGER
     targets: ["command:New collection", Collection.resize()]
     classification: Refactor
     note: "Use an untyped collection (New collection or []) instead of a typed array."
+    note_ja: "型指定された配列の代わりに、型のないコレクション (New collection または []) を使用します。"
     reviewed: false
   - command: ARRAY LONGINT
     targets: ["command:New collection", Collection.resize()]
     classification: Refactor
     note: "Use an untyped collection (New collection or []) instead of a typed array."
+    note_ja: "型指定された配列の代わりに、型のないコレクション (New collection または []) を使用します。"
     reviewed: false
   - command: ARRAY OBJECT
     targets: ["command:New collection", Collection.resize()]
     classification: Refactor
     note: "Use an untyped collection (New collection or []) instead of a typed array."
+    note_ja: "型指定された配列の代わりに、型のないコレクション (New collection または []) を使用します。"
     reviewed: false
   - command: ARRAY PICTURE
     targets: ["command:New collection", Collection.resize()]
     classification: Refactor
     note: "Use an untyped collection (New collection or []) instead of a typed array."
+    note_ja: "型指定された配列の代わりに、型のないコレクション (New collection または []) を使用します。"
     reviewed: false
   - command: ARRAY REAL
     targets: ["command:New collection", Collection.resize()]
     classification: Refactor
     note: "Use an untyped collection (New collection or []) instead of a typed array."
+    note_ja: "型指定された配列の代わりに、型のないコレクション (New collection または []) を使用します。"
     reviewed: false
   - command: ARRAY TEXT
     targets: ["command:New collection", Collection.resize()]
     classification: Refactor
     note: "Use an untyped collection (New collection or []) instead of a typed array."
+    note_ja: "型指定された配列の代わりに、型のないコレクション (New collection または []) を使用します。"
     reviewed: false
   - command: ARRAY TIME
     targets: ["command:New collection", Collection.resize()]
     classification: Refactor
     note: "Use an untyped collection (New collection or []) instead of a typed array; times are stored as numbers."
+    note_ja: "型指定された配列の代わりに、型のないコレクション (New collection または []) を使用します。時間は数値として格納されます。"
     reviewed: false
   - command: COPY ARRAY
     targets: [Collection.copy()]
     classification: Refactor
     note: copy() returns a deep copy of the collection.
+    note_ja: "copy() はコレクションのディープコピーを返します。"
     reviewed: false
   - command: Count in array
     targets: [Collection.countValues()]
     classification: Refactor
     note: countValues() counts the elements equal to a value.
+    note_ja: "countValues() は指定値と等しい要素の数を返します。"
     reviewed: false
   - command: DELETE FROM ARRAY
     targets: [Collection.remove()]
     classification: Refactor
     note: remove() deletes one or more elements at an index.
+    note_ja: "remove() は指定インデックスから 1 つ以上の要素を削除します。"
     reviewed: false
   - command: Find in array
     targets: [Collection.indexOf(), Collection.findIndex()]
     classification: Refactor
     note: indexOf() finds a value; findIndex() finds the first element matching a formula.
+    note_ja: "indexOf() は値を検索し、findIndex() はフォーミュラに合致する最初の要素を検索します。"
     reviewed: false
   - command: Find in sorted array
     targets: [Collection.indexOf()]
     classification: Partial
     note: No binary search or insertion-point result; indexOf() performs a linear search.
+    note_ja: "二分探索や挿入位置の取得はなく、indexOf() は線形検索を行います。"
     reviewed: false
   - command: INSERT IN ARRAY
     targets: [Collection.insert()]
     classification: Refactor
     note: insert() adds an element at an index.
+    note_ja: "insert() は指定インデックスに要素を挿入します。"
     reviewed: false
   - command: MULTI SORT ARRAY
     targets: [Collection.multiSort(), Collection.orderBy()]
     classification: Refactor
     note: multiSort() keeps several collections synchronized; orderBy() sorts a collection of objects on several properties.
+    note_ja: "multiSort() は複数のコレクションを同期してソートし、orderBy() はオブジェクトのコレクションを複数のプロパティでソートします。"
     reviewed: false
   - command: Size of array
     targets: [Collection.length]
     classification: Refactor
     note: length returns the number of elements.
+    note_ja: "length は要素数を返します。"
     reviewed: false
   - command: SORT ARRAY
     targets: [Collection.sort(), Collection.orderBy()]
     classification: Refactor
     note: sort() sorts in place; orderBy() returns a new sorted collection.
+    note_ja: "sort() はその場でソートし、orderBy() はソートされた新しいコレクションを返します。"
     reviewed: false
 
   # --- JSON ---
@@ -390,11 +446,13 @@ mappings:
     targets: ["command:JSON Parse"]
     classification: Refactor
     note: "JSON Parse returns a collection for a JSON array, so no target array is needed."
+    note_ja: "JSON Parse は JSON 配列に対してコレクションを返すため、格納先の配列は不要です。"
     reviewed: false
   - command: JSON Stringify array
     targets: ["command:JSON Stringify"]
     classification: Refactor
     note: JSON Stringify serializes a collection directly.
+    note_ja: "JSON Stringify はコレクションを直接シリアライズします。"
     reviewed: false
 
   # --- HTTP ---
@@ -402,31 +460,37 @@ mappings:
     targets: [4D.HTTPRequest.new()]
     classification: Refactor
     note: Credentials are passed in the authentication option of each request instead of a process-wide setting.
+    note_ja: "認証情報はプロセス全体の設定ではなく、各リクエストの authentication オプションで渡します。"
     reviewed: false
   - command: HTTP Get
     targets: [4D.HTTPRequest.new(), HTTPRequest.wait(), HTTPRequest.response]
     classification: Refactor
     note: "Requests are asynchronous objects; call wait() and read response to get status, headers and body."
+    note_ja: "リクエストは非同期のオブジェクトであり、wait() を呼び出して response からステータス・ヘッダー・本文を取得します。"
     reviewed: false
   - command: HTTP GET OPTION
     targets: [HTTPRequest.timeout, HTTPRequest.protocol, HTTPAgent.params]
     classification: Partial
     note: Options are per-request (or per HTTPAgent) properties rather than process-wide settings.
+    note_ja: "オプションはプロセス全体の設定ではなく、リクエストごと (または HTTPAgent ごと) のプロパティです。"
     reviewed: false
   - command: HTTP Request
     targets: [4D.HTTPRequest.new(), HTTPRequest.wait(), HTTPRequest.response]
     classification: Refactor
     note: Requests are asynchronous objects with callbacks; call wait() for synchronous behavior.
+    note_ja: "リクエストはコールバックを持つ非同期のオブジェクトであり、同期的に処理するには wait() を呼び出します。"
     reviewed: false
   - command: HTTP SET CERTIFICATES FOLDER
     targets: [4D.HTTPRequest.new()]
     classification: Refactor
     note: Pass the certificatesFolder option per request instead of setting it for the process.
+    note_ja: "プロセスに設定する代わりに、リクエストごとに certificatesFolder オプションを渡します。"
     reviewed: false
   - command: HTTP SET OPTION
     targets: [4D.HTTPRequest.new(), 4D.HTTPAgent.new()]
     classification: Refactor
     note: "Timeout, redirects, compression etc. are request options; keep-alive and connection settings live on an HTTPAgent."
+    note_ja: "タイムアウト・リダイレクト・圧縮などはリクエストのオプションで、キープアライブや接続の設定は HTTPAgent で行います。"
     reviewed: false
 
   # --- Web Services (Client) ---
@@ -434,6 +498,7 @@ mappings:
     targets: [4D.HTTPRequest.new()]
     classification: Partial
     note: "SOAP calls can be sent as raw HTTP requests, but SOAP envelope building and parsing must be done manually."
+    note_ja: "SOAP 呼び出しは通常の HTTP リクエストとして送信できますが、SOAP エンベロープの作成と解析は手動で行う必要があります。"
     reviewed: false
 
   # --- Processes ---
@@ -441,36 +506,43 @@ mappings:
     targets: [4D.SystemWorker.new()]
     classification: Partial
     note: Environment variables are passed in the variables option of the SystemWorker.
+    note_ja: "環境変数は SystemWorker の variables オプションで渡します。"
     reviewed: false
   - command: LAUNCH EXTERNAL PROCESS
     targets: [4D.SystemWorker.new(), SystemWorker.wait(), SystemWorker.response]
     classification: Refactor
     note: SystemWorker runs the process asynchronously with callbacks; wait() gives synchronous behavior and response/exitCode the results.
+    note_ja: "SystemWorker はコールバック付きでプロセスを非同期に実行し、wait() で同期的に処理でき、response/exitCode で結果を取得します。"
     reviewed: false
   - command: GET PROCESS VARIABLE
     targets: ["command:Storage", "command:New signal"]
     classification: Partial
     note: "Share data through Storage/shared objects or a Signal instead of reading another process's variables."
+    note_ja: "他プロセスの変数を読み出す代わりに、Storage/共有オブジェクトまたはシグナルでデータを共有します。"
     reviewed: false
   - command: SET PROCESS VARIABLE
     targets: ["command:Storage", "command:New signal"]
     classification: Partial
     note: "Share data through Storage/shared objects or a Signal instead of writing another process's variables."
+    note_ja: "他プロセスの変数に書き込む代わりに、Storage/共有オブジェクトまたはシグナルでデータを共有します。"
     reviewed: false
   - command: VARIABLE TO VARIABLE
     targets: ["command:Storage", "command:New signal"]
     classification: Partial
     note: Share data through Storage/shared objects or a Signal instead of copying variables between processes.
+    note_ja: "プロセス間で変数をコピーする代わりに、Storage/共有オブジェクトまたはシグナルでデータを共有します。"
     reviewed: false
   - command: Current user
     targets: [Session.userName]
     classification: Partial
     note: "Session.userName is the session user (web, REST, client), which may differ from the 4D user in the users and groups directory."
+    note_ja: "Session.userName はセッションのユーザー (Web・REST・クライアント) であり、ユーザー＆グループの 4D ユーザーとは異なる場合があります。"
     reviewed: false
   - command: User in group
     targets: [Session.hasPrivilege()]
     classification: Partial
     note: Sessions use roles and privileges (roles.json) instead of 4D groups.
+    note_ja: "セッションは 4D のグループではなく、ロールと権限 (roles.json) を使用します。"
     reviewed: false
 
   # --- Formulas ---
@@ -478,11 +550,13 @@ mappings:
     targets: ["command:Formula from string", Function.call()]
     classification: Refactor
     note: "Build a formula object with Formula from string and run it with call(), which also supports parameters and a This object."
+    note_ja: "Formula from string でフォーミュラオブジェクトを作成し、引数と This オブジェクトも渡せる call() で実行します。"
     reviewed: false
   - command: EXECUTE METHOD
     targets: ["command:Formula from string", Function.call(), Function.apply()]
     classification: Refactor
     note: Wrap the method in a formula object and invoke it with call() or apply().
+    note_ja: "メソッドをフォーミュラオブジェクトでラップし、call() または apply() で呼び出します。"
     reviewed: false
 
   # --- Secured Protocol ---
@@ -490,6 +564,7 @@ mappings:
     targets: [4D.CryptoKey.new(), CryptoKey.getPrivateKey(), CryptoKey.getPublicKey()]
     classification: Refactor
     note: A CryptoKey object generates RSA or ECDSA key pairs and returns PEM keys.
+    note_ja: "CryptoKey オブジェクトは RSA または ECDSA の鍵ペアを生成し、PEM 形式の鍵を返します。"
     reviewed: false
 
   # --- Data Security ---
@@ -497,11 +572,13 @@ mappings:
     targets: [DataStore.encryptionStatus()]
     classification: Drop-in
     note: Returns the same encryption status object for a datastore.
+    note_ja: "データストアについて同じ暗号化ステータスオブジェクトを返します。"
     reviewed: false
   - command: Register data key
     targets: [DataStore.provideDataKey()]
     classification: Partial
     note: provideDataKey() supplies the key for the current datastore but does not store it in the 4D keychain.
+    note_ja: "provideDataKey() はカレントデータストアに暗号化キーを渡しますが、4D キーチェーンには保存しません。"
     reviewed: false
 
   # --- 4D Environment ---
@@ -509,11 +586,13 @@ mappings:
     targets: ["command:Folder"]
     classification: Refactor
     note: Folder(fk ... folder constant) returns a Folder object instead of a pathname.
+    note_ja: "Folder(fk ... folder 定数) はパス名の代わりに Folder オブジェクトを返します。"
     reviewed: false
   - command: Get 4D file
     targets: ["command:File"]
     classification: Refactor
     note: File(file constant) returns a File object instead of a pathname.
+    note_ja: "File(ファイル定数) はパス名の代わりに File オブジェクトを返します。"
     reviewed: false
 
   # --- System Environment ---
@@ -521,6 +600,7 @@ mappings:
     targets: ["command:Folder"]
     classification: Refactor
     note: Folder(fk system folder / fk desktop folder / ...) returns a Folder object instead of a pathname.
+    note_ja: "Folder(fk system folder / fk desktop folder / ...) はパス名の代わりに Folder オブジェクトを返します。"
     reviewed: false
 
   # --- Web Server ---
@@ -528,96 +608,115 @@ mappings:
     targets: [IncomingMessage.getText(), IncomingMessage.getBlob(), IncomingMessage.getJSON()]
     classification: Refactor
     note: In HTTP request handlers the request body is read from the IncomingMessage object.
+    note_ja: "HTTP リクエストハンドラーでは、リクエストの本文を IncomingMessage オブジェクトから読み出します。"
     reviewed: false
   - command: WEB GET HTTP HEADER
     targets: [IncomingMessage.headers, IncomingMessage.verb, IncomingMessage.url]
     classification: Refactor
     note: "In HTTP request handlers headers, verb and URL are IncomingMessage properties."
+    note_ja: "HTTP リクエストハンドラーでは、ヘッダー・メソッド・URL は IncomingMessage のプロパティです。"
     reviewed: false
   - command: WEB GET OPTION
     targets: [WebServer.HTTPPort, WebServer.HTTPSPort, WebServer.maxConcurrentProcesses]
     classification: Refactor
     note: Each Web option is a property of the WebServer object (WEB Server).
+    note_ja: "各 Web オプションは WebServer オブジェクト (WEB Server) のプロパティです。"
     reviewed: false
   - command: WEB GET VARIABLES
     targets: [IncomingMessage.urlQuery]
     classification: Partial
     note: urlQuery covers URL parameters; form bodies must be parsed from the IncomingMessage body.
+    note_ja: "urlQuery は URL パラメーターを扱い、フォームの本文は IncomingMessage の本文から解析する必要があります。"
     reviewed: false
   - command: WEB Get current session ID
     targets: [Session.id]
     classification: Refactor
     note: "With scalable sessions, Session.id identifies the current web session."
+    note_ja: "スケーラブルセッションでは、Session.id がカレントの Web セッションを識別します。"
     reviewed: false
   - command: WEB Get server info
     targets: [WebServer.isRunning, WebServer.openSSLVersion, WebServer.HTTPPort]
     classification: Partial
     note: Configuration and status are WebServer properties; statistics are not exposed.
+    note_ja: "設定とステータスは WebServer のプロパティとして取得できますが、統計情報は提供されません。"
     reviewed: false
   - command: WEB Is server running
     targets: [WebServer.isRunning]
     classification: Drop-in
     note: isRunning on the WebServer object (WEB Server) returns the same status.
+    note_ja: "WebServer オブジェクト (WEB Server) の isRunning が同じステータスを返します。"
     reviewed: false
   - command: WEB LEGACY GET SESSION EXPIRATION
     targets: [Session.expirationDate]
     classification: Partial
     note: Applies to scalable sessions only; legacy sessions are not supported.
+    note_ja: "スケーラブルセッションのみが対象で、旧式セッションはサポートされません。"
     reviewed: false
   - command: WEB SEND BLOB
     targets: [OutgoingMessage.setBody(), OutgoingMessage.setHeader()]
     classification: Refactor
     note: In HTTP request handlers return an OutgoingMessage whose body is set with setBody().
+    note_ja: "HTTP リクエストハンドラーでは、setBody() で本文を設定した OutgoingMessage を返します。"
     reviewed: false
   - command: WEB SEND FILE
     targets: [OutgoingMessage.setBody(), File.getContent()]
     classification: Refactor
     note: In HTTP request handlers return an OutgoingMessage with the file content as body.
+    note_ja: "HTTP リクエストハンドラーでは、ファイルの内容を本文に設定した OutgoingMessage を返します。"
     reviewed: false
   - command: WEB SEND HTTP REDIRECT
     targets: [OutgoingMessage.setStatus(), OutgoingMessage.setHeader()]
     classification: Refactor
     note: Set a 3xx status and a Location header on the OutgoingMessage.
+    note_ja: "OutgoingMessage に 3xx ステータスと Location ヘッダーを設定します。"
     reviewed: false
   - command: WEB SEND RAW DATA
     targets: [OutgoingMessage.setStatus(), OutgoingMessage.setHeader(), OutgoingMessage.setBody()]
     classification: Refactor
     note: "Status, headers and body are set separately on the OutgoingMessage."
+    note_ja: "ステータス・ヘッダー・本文は OutgoingMessage に個別に設定します。"
     reviewed: false
   - command: WEB SEND TEXT
     targets: [OutgoingMessage.setBody(), OutgoingMessage.setHeader()]
     classification: Refactor
     note: In HTTP request handlers return an OutgoingMessage with a text body.
+    note_ja: "HTTP リクエストハンドラーでは、テキストの本文を持つ OutgoingMessage を返します。"
     reviewed: false
   - command: WEB SET HOME PAGE
     targets: [WebServer.defaultHomepage]
     classification: Refactor
     note: Set defaultHomepage in the settings passed to WebServer.start(); it is not per web process.
+    note_ja: "WebServer.start() に渡す設定で defaultHomepage を指定し、Web プロセスごとには設定しません。"
     reviewed: false
   - command: WEB SET HTTP HEADER
     targets: [OutgoingMessage.setHeader()]
     classification: Refactor
     note: In HTTP request handlers headers are set on the OutgoingMessage.
+    note_ja: "HTTP リクエストハンドラーでは、ヘッダーは OutgoingMessage に設定します。"
     reviewed: false
   - command: WEB SET OPTION
     targets: [WebServer.start()]
     classification: Refactor
     note: Pass options as settings to WebServer.start(); they apply to that web server instance.
+    note_ja: "オプションは WebServer.start() に設定として渡し、その Web サーバーインスタンスに適用されます。"
     reviewed: false
   - command: WEB SET ROOT FOLDER
     targets: [WebServer.rootFolder, WebServer.start()]
     classification: Refactor
     note: Pass rootFolder in the settings of WebServer.start().
+    note_ja: "WebServer.start() の設定で rootFolder を渡します。"
     reviewed: false
   - command: WEB START SERVER
     targets: ["command:WEB Server", WebServer.start()]
     classification: Drop-in
     note: WEB Server returns the WebServer object whose start() starts it (optionally with settings).
+    note_ja: "WEB Server は WebServer オブジェクトを返し、その start() で (任意で設定を指定して) 開始します。"
     reviewed: false
   - command: WEB STOP SERVER
     targets: ["command:WEB Server", WebServer.stop()]
     classification: Drop-in
     note: WEB Server returns the WebServer object whose stop() stops it.
+    note_ja: "WEB Server は WebServer オブジェクトを返し、その stop() で停止します。"
     reviewed: false
 
   # --- ORDA ---
@@ -625,359 +724,431 @@ mappings:
     targets: [EntitySelection.distinctPaths()]
     classification: Refactor
     note: distinctPaths() returns the paths of an object attribute for an entity selection.
+    note_ja: "distinctPaths() はエンティティセレクションのオブジェクト属性のパスを返します。"
     reviewed: false
   - command: DISTINCT ATTRIBUTE VALUES
     targets: [EntitySelection.distinct()]
     classification: Refactor
     note: distinct() accepts an object attribute path and returns a collection.
+    note_ja: "distinct() はオブジェクト属性のパスを受け付け、コレクションを返します。"
     reviewed: false
   - command: DISTINCT VALUES
     targets: [EntitySelection.distinct(), Collection.distinct()]
     classification: Refactor
     note: distinct() on an entity selection returns a collection instead of filling an array.
+    note_ja: "エンティティセレクションの distinct() は配列に格納する代わりにコレクションを返します。"
     reviewed: false
   - command: SELECTION TO ARRAY
     targets: [EntitySelection.toCollection(), EntitySelection.extract()]
     classification: Refactor
     note: extract() returns attribute values as collections; toCollection() returns objects.
+    note_ja: "extract() は属性値をコレクションで返し、toCollection() はオブジェクトのコレクションを返します。"
     reviewed: false
   - command: SELECTION RANGE TO ARRAY
     targets: [EntitySelection.slice(), EntitySelection.extract()]
     classification: Refactor
     note: Take a range with slice() then extract() the attribute values.
+    note_ja: "slice() で範囲を取得してから extract() で属性値を取り出します。"
     reviewed: false
   - command: ARRAY TO SELECTION
     targets: [DataClass.fromCollection()]
     classification: Refactor
     note: fromCollection() creates or updates entities from a collection of objects.
+    note_ja: "fromCollection() はオブジェクトのコレクションからエンティティを作成または更新します。"
     reviewed: false
   - command: JSON TO SELECTION
     targets: [DataClass.fromCollection()]
     classification: Refactor
     note: Parse the JSON to a collection and pass it to fromCollection().
+    note_ja: "JSON をコレクションに解析してから fromCollection() に渡します。"
     reviewed: false
   - command: Selection to JSON
     targets: [EntitySelection.toCollection()]
     classification: Refactor
     note: Convert with toCollection() then JSON Stringify.
+    note_ja: "toCollection() で変換してから JSON Stringify します。"
     reviewed: false
   - command: Average
     targets: [EntitySelection.average(), Collection.average()]
     classification: Refactor
     note: Computed on an entity selection (or collection) instead of the current selection or an array.
+    note_ja: "カレントセレクションや配列ではなく、エンティティセレクション (またはコレクション) に対して計算します。"
     reviewed: false
   - command: Max
     targets: [EntitySelection.max(), Collection.max()]
     classification: Refactor
     note: Computed on an entity selection (or collection) instead of the current selection or an array.
+    note_ja: "カレントセレクションや配列ではなく、エンティティセレクション (またはコレクション) に対して計算します。"
     reviewed: false
   - command: Min
     targets: [EntitySelection.min(), Collection.min()]
     classification: Refactor
     note: Computed on an entity selection (or collection) instead of the current selection or an array.
+    note_ja: "カレントセレクションや配列ではなく、エンティティセレクション (またはコレクション) に対して計算します。"
     reviewed: false
   - command: Sum
     targets: [EntitySelection.sum(), Collection.sum()]
     classification: Refactor
     note: Computed on an entity selection (or collection) instead of the current selection or an array.
+    note_ja: "カレントセレクションや配列ではなく、エンティティセレクション (またはコレクション) に対して計算します。"
     reviewed: false
   - command: CREATE RECORD
     targets: [DataClass.new()]
     classification: Refactor
     note: new() returns a new entity in memory; nothing is stored until save().
+    note_ja: "new() はメモリ上に新しいエンティティを返し、save() するまで保存されません。"
     reviewed: false
   - command: SAVE RECORD
     targets: [Entity.save()]
     classification: Refactor
     note: save() returns a status object (optimistic locking) instead of relying on the current record.
+    note_ja: "save() はカレントレコードに依存せず、ステータスオブジェクト (オプティミスティックロック) を返します。"
     reviewed: false
   - command: DELETE RECORD
     targets: [Entity.drop()]
     classification: Refactor
     note: drop() deletes the entity and returns a status object.
+    note_ja: "drop() はエンティティを削除し、ステータスオブジェクトを返します。"
     reviewed: false
   - command: DUPLICATE RECORD
     targets: [DataClass.new(), Entity.toObject(), Entity.fromObject()]
     classification: Partial
     note: "Create a new entity and copy attribute values with toObject()/fromObject(), excluding the primary key."
+    note_ja: "新しいエンティティを作成し、プライマリーキーを除く属性値を toObject()/fromObject() でコピーします。"
     reviewed: false
   - command: GOTO RECORD
     targets: [DataClass.get()]
     classification: Refactor
     note: "Entities are loaded by primary key with get(), not by record number."
+    note_ja: "エンティティはレコード番号ではなく、プライマリーキーで get() により読み込みます。"
     reviewed: false
   - command: Is new record
     targets: [Entity.isNew()]
     classification: Refactor
     note: isNew() tells whether the entity has not been saved yet.
+    note_ja: "isNew() はエンティティがまだ保存されていないかどうかを返します。"
     reviewed: false
   - command: Modified record
     targets: [Entity.touched(), Entity.touchedAttributes()]
     classification: Refactor
     note: touched() / touchedAttributes() report modifications since loading.
+    note_ja: "touched() / touchedAttributes() は読み込み後の変更を返します。"
     reviewed: false
   - command: Record number
     targets: [Entity.getKey()]
     classification: Partial
     note: ORDA identifies entities by primary key; record numbers are not exposed.
+    note_ja: "ORDA はエンティティをプライマリーキーで識別し、レコード番号は公開されません。"
     reviewed: false
   - command: Records in table
     targets: [DataClass.getCount(), DataClass.all()]
     classification: Refactor
     note: getCount() (or all().length) returns the number of entities of the dataclass.
+    note_ja: "getCount() (または all().length) はデータクラスのエンティティ数を返します。"
     reviewed: false
   - command: LOAD RECORD
     targets: [Entity.reload(), Entity.lock()]
     classification: Refactor
     note: Entities are loaded when accessed; reload() refreshes data and lock() locks for writing.
+    note_ja: "エンティティはアクセス時に読み込まれ、reload() でデータを更新し、lock() で書き込み用にロックします。"
     reviewed: false
   - command: Locked
     targets: [Entity.lock()]
     classification: Partial
     note: The status object returned by lock() (or save()) reports locking instead of a separate check.
+    note_ja: "ロック状態は個別に確認するのではなく、lock() (または save()) が返すステータスオブジェクトで報告されます。"
     reviewed: false
   - command: LOCKED BY
     targets: [Entity.lock()]
     classification: Partial
     note: Lock owner details are returned in the lockInfo of the status object from lock().
+    note_ja: "ロックしているユーザーの詳細は、lock() が返すステータスオブジェクトの lockInfo で取得できます。"
     reviewed: false
   - command: READ ONLY
     targets: [Entity.unlock()]
     classification: Partial
     note: ORDA uses optimistic locking by default; pessimistic locks are released per entity with unlock().
+    note_ja: "ORDA はデフォルトでオプティミスティックロックを使用し、ペシミスティックロックはエンティティごとに unlock() で解除します。"
     reviewed: false
   - command: READ WRITE
     targets: [Entity.lock()]
     classification: Partial
     note: ORDA uses optimistic locking by default; pessimistic locking is done per entity with lock().
+    note_ja: "ORDA はデフォルトでオプティミスティックロックを使用し、ペシミスティックロックはエンティティごとに lock() で行います。"
     reviewed: false
   - command: UNLOAD RECORD
     targets: [Entity.unlock()]
     classification: Partial
     note: Releases a pessimistic lock on the entity; memory is released when the entity is no longer referenced.
+    note_ja: "エンティティのペシミスティックロックを解除し、メモリはエンティティが参照されなくなった時点で解放されます。"
     reviewed: false
   - command: QUERY
     targets: [DataClass.query()]
     classification: Refactor
     note: query() returns a new entity selection instead of changing the current selection.
+    note_ja: "query() はカレントセレクションを変更する代わりに、新しいエンティティセレクションを返します。"
     reviewed: false
   - command: QUERY SELECTION
     targets: [EntitySelection.query()]
     classification: Refactor
     note: query() on an entity selection returns a new entity selection.
+    note_ja: "エンティティセレクションの query() は新しいエンティティセレクションを返します。"
     reviewed: false
   - command: QUERY BY ATTRIBUTE
     targets: [DataClass.query()]
     classification: Refactor
     note: Object attribute paths can be used directly in query strings.
+    note_ja: "オブジェクト属性のパスをクエリ文字列で直接使用できます。"
     reviewed: false
   - command: QUERY SELECTION BY ATTRIBUTE
     targets: [EntitySelection.query()]
     classification: Refactor
     note: Object attribute paths can be used directly in query strings.
+    note_ja: "オブジェクト属性のパスをクエリ文字列で直接使用できます。"
     reviewed: false
   - command: QUERY BY FORMULA
     targets: [DataClass.query()]
     classification: Refactor
     note: Pass a formula (or eval() in the query string) to query().
+    note_ja: "query() にフォーミュラ (またはクエリ文字列内の eval()) を渡します。"
     reviewed: false
   - command: QUERY SELECTION BY FORMULA
     targets: [EntitySelection.query()]
     classification: Refactor
     note: Pass a formula (or eval() in the query string) to query().
+    note_ja: "query() にフォーミュラ (またはクエリ文字列内の eval()) を渡します。"
     reviewed: false
   - command: QUERY WITH ARRAY
     targets: [DataClass.query()]
     classification: Refactor
     note: Use the IN operator with a collection placeholder.
+    note_ja: "コレクションのプレースホルダーと IN 演算子を使用します。"
     reviewed: false
   - command: QUERY SELECTION WITH ARRAY
     targets: [EntitySelection.query()]
     classification: Refactor
     note: Use the IN operator with a collection placeholder.
+    note_ja: "コレクションのプレースホルダーと IN 演算子を使用します。"
     reviewed: false
   - command: Find in field
     targets: [DataClass.query()]
     classification: Partial
     note: Query on the attribute value; record numbers are not returned.
+    note_ja: "属性値でクエリし、レコード番号は返されません。"
     reviewed: false
   - command: ORDER BY
     targets: [EntitySelection.orderBy()]
     classification: Refactor
     note: orderBy() returns a new ordered entity selection.
+    note_ja: "orderBy() は並べ替えられた新しいエンティティセレクションを返します。"
     reviewed: false
   - command: ORDER BY ATTRIBUTE
     targets: [EntitySelection.orderBy()]
     classification: Refactor
     note: Object attribute paths can be used directly in orderBy().
+    note_ja: "オブジェクト属性のパスを orderBy() で直接使用できます。"
     reviewed: false
   - command: ORDER BY FORMULA
     targets: [EntitySelection.orderByFormula()]
     classification: Refactor
     note: orderByFormula() returns a new ordered entity selection.
+    note_ja: "orderByFormula() は並べ替えられた新しいエンティティセレクションを返します。"
     reviewed: false
   - command: Last query plan
     targets: [EntitySelection.queryPlan]
     classification: Refactor
     note: "Pass queryPlan:true in the query settings and read the queryPlan property."
+    note_ja: "クエリの設定に queryPlan:true を渡し、queryPlan プロパティを読み出します。"
     reviewed: false
   - command: Last query path
     targets: [EntitySelection.queryPath]
     classification: Refactor
     note: "Pass queryPath:true in the query settings and read the queryPath property."
+    note_ja: "クエリの設定に queryPath:true を渡し、queryPath プロパティを読み出します。"
     reviewed: false
   - command: DESCRIBE QUERY EXECUTION
     targets: [EntitySelection.queryPlan, EntitySelection.queryPath]
     classification: Partial
     note: Description is requested per query in its settings rather than for the process.
+    note_ja: "説明はプロセス単位ではなく、クエリごとにその設定で要求します。"
     reviewed: false
   - command: ALL RECORDS
     targets: [DataClass.all()]
     classification: Refactor
     note: all() returns an entity selection instead of changing the current selection.
+    note_ja: "all() はカレントセレクションを変更する代わりに、エンティティセレクションを返します。"
     reviewed: false
   - command: DELETE SELECTION
     targets: [EntitySelection.drop()]
     classification: Refactor
     note: drop() deletes the entities and returns the ones that could not be dropped.
+    note_ja: "drop() はエンティティを削除し、削除できなかったエンティティを返します。"
     reviewed: false
   - command: FIRST RECORD
     targets: [EntitySelection.first()]
     classification: Refactor
     note: first() returns the first entity; iterate with For each.
+    note_ja: "first() は最初のエンティティを返し、For each で順に処理できます。"
     reviewed: false
   - command: LAST RECORD
     targets: [EntitySelection.last()]
     classification: Refactor
     note: last() returns the last entity.
+    note_ja: "last() は最後のエンティティを返します。"
     reviewed: false
   - command: NEXT RECORD
     targets: [Entity.next()]
     classification: Refactor
     note: next() returns the next entity of the selection (prefer For each).
+    note_ja: "next() はエンティティセレクション内の次のエンティティを返します (For each の使用を推奨)。"
     reviewed: false
   - command: PREVIOUS RECORD
     targets: [Entity.previous()]
     classification: Refactor
     note: previous() returns the previous entity of the selection.
+    note_ja: "previous() はエンティティセレクション内の前のエンティティを返します。"
     reviewed: false
   - command: GOTO SELECTED RECORD
     targets: [EntitySelection.at()]
     classification: Refactor
     note: "Access entities by index with at() or $sel[index] (0-based)."
+    note_ja: "at() または $sel[index] (0 起点) でインデックスによりエンティティにアクセスします。"
     reviewed: false
   - command: Records in selection
     targets: [EntitySelection.length]
     classification: Refactor
     note: length returns the number of entities.
+    note_ja: "length はエンティティ数を返します。"
     reviewed: false
   - command: REDUCE SELECTION
     targets: [EntitySelection.slice()]
     classification: Refactor
     note: slice() returns the first entities as a new entity selection.
+    note_ja: "slice() は先頭のエンティティを新しいエンティティセレクションとして返します。"
     reviewed: false
   - command: Selected record number
     targets: [Entity.indexOf()]
     classification: Refactor
     note: indexOf() returns the 0-based position of the entity in an entity selection.
+    note_ja: "indexOf() はエンティティセレクション内でのエンティティの位置 (0 起点) を返します。"
     reviewed: false
   - command: TRUNCATE TABLE
     targets: [DataClass.all(), EntitySelection.drop()]
     classification: Partial
     note: all().drop() deletes all entities one by one (triggers apply) rather than truncating the table.
+    note_ja: "all().drop() はテーブルを切り詰めるのではなく、エンティティを 1 件ずつ削除します (トリガーが実行されます)。"
     reviewed: false
   - command: ADD TO SET
     targets: [EntitySelection.add()]
     classification: Refactor
     note: add() adds an entity to an alterable entity selection.
+    note_ja: "add() は追加可能なエンティティセレクションにエンティティを追加します。"
     reviewed: false
   - command: COPY SET
     targets: [EntitySelection.copy()]
     classification: Refactor
     note: copy() returns a copy (shareable or alterable) of an entity selection.
+    note_ja: "copy() はエンティティセレクションのコピー (共有可能または追加可能) を返します。"
     reviewed: false
   - command: CREATE EMPTY SET
     targets: [DataClass.newSelection()]
     classification: Refactor
     note: newSelection() returns an empty alterable entity selection.
+    note_ja: "newSelection() は空の追加可能なエンティティセレクションを返します。"
     reviewed: false
   - command: CREATE SET
     targets: ["command:Create entity selection"]
     classification: Refactor
     note: "Entity selections are values: keep the entity selection in a variable instead of creating a named set."
+    note_ja: "エンティティセレクションは値なので、命名セットを作成する代わりに変数に保持します。"
     reviewed: false
   - command: DIFFERENCE
     targets: [EntitySelection.minus()]
     classification: Refactor
     note: minus() returns a new entity selection.
+    note_ja: "minus() は新しいエンティティセレクションを返します。"
     reviewed: false
   - command: INTERSECTION
     targets: [EntitySelection.and()]
     classification: Refactor
     note: and() returns a new entity selection.
+    note_ja: "and() は新しいエンティティセレクションを返します。"
     reviewed: false
   - command: UNION
     targets: [EntitySelection.or()]
     classification: Refactor
     note: or() returns a new entity selection.
+    note_ja: "or() は新しいエンティティセレクションを返します。"
     reviewed: false
   - command: Is in set
     targets: [EntitySelection.contains()]
     classification: Refactor
     note: contains() tells whether an entity belongs to the entity selection.
+    note_ja: "contains() はエンティティがエンティティセレクションに含まれるかどうかを返します。"
     reviewed: false
   - command: Records in set
     targets: [EntitySelection.length]
     classification: Refactor
     note: length returns the number of entities.
+    note_ja: "length はエンティティ数を返します。"
     reviewed: false
   - command: REMOVE FROM SET
     targets: [EntitySelection.minus()]
     classification: Refactor
     note: minus() accepts an entity and returns a new entity selection without it.
+    note_ja: "minus() はエンティティを受け取り、それを除いた新しいエンティティセレクションを返します。"
     reviewed: false
   - command: USE SET
     targets: ["command:USE ENTITY SELECTION"]
     classification: Refactor
     note: USE ENTITY SELECTION makes an entity selection the current selection when classic code still needs it.
+    note_ja: "クラシックコードでまだ必要な場合は、USE ENTITY SELECTION でエンティティセレクションをカレントセレクションにします。"
     reviewed: false
   - command: COPY NAMED SELECTION
     targets: [EntitySelection.copy()]
     classification: Refactor
     note: Keep a copy of the entity selection in a variable instead of a named selection.
+    note_ja: "命名セレクションの代わりに、エンティティセレクションのコピーを変数に保持します。"
     reviewed: false
   - command: USE NAMED SELECTION
     targets: ["command:USE ENTITY SELECTION"]
     classification: Refactor
     note: USE ENTITY SELECTION makes an entity selection the current selection when classic code still needs it.
+    note_ja: "クラシックコードでまだ必要な場合は、USE ENTITY SELECTION でエンティティセレクションをカレントセレクションにします。"
     reviewed: false
   - command: START TRANSACTION
     targets: [DataStore.startTransaction()]
     classification: Drop-in
     note: Starts a transaction on the datastore (ds or a remote datastore).
+    note_ja: "データストア (ds またはリモートデータストア) でトランザクションを開始します。"
     reviewed: false
   - command: VALIDATE TRANSACTION
     targets: [DataStore.validateTransaction()]
     classification: Drop-in
     note: Validates the transaction on the datastore.
+    note_ja: "データストアでトランザクションを受け入れます。"
     reviewed: false
   - command: CANCEL TRANSACTION
     targets: [DataStore.cancelTransaction()]
     classification: Drop-in
     note: Cancels the transaction on the datastore.
+    note_ja: "データストアでトランザクションをキャンセルします。"
     reviewed: false
   - command: Table name
     targets: [DataClass.getInfo()]
     classification: Refactor
     note: "getInfo() returns the dataclass name, table number and primary key."
+    note_ja: "getInfo() はデータクラスの名前・テーブル番号・プライマリーキーを返します。"
     reviewed: false
   - command: GET TABLE PROPERTIES
     targets: [DataClass.getInfo()]
     classification: Partial
     note: "getInfo() exposes name, number and primary key only."
+    note_ja: "getInfo() は名前・番号・プライマリーキーのみを提供します。"
     reviewed: false
   - command: SAVE RELATED ONE
     targets: [Entity.save()]
     classification: Refactor
     note: Save the related entity itself ($entity.relation.save()).
+    note_ja: "リレート先のエンティティ自体を保存します ($entity.relation.save())。"
     reviewed: false
