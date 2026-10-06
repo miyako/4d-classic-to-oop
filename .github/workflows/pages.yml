@@ -1,4 +1,4 @@
-# Build the static site (en + ja) from mapping.yaml and the 4D docs, then deploy it to GitHub Pages.
+# Build the static site (en + ja + fr) from mapping.yaml and the 4D docs, then deploy it to GitHub Pages.
 name: Pages
 
 on:
@@ -56,6 +56,8 @@ jobs:
             /versioned_docs/**/preprocessing.conf
             /i18n/ja/docusaurus-plugin-content-docs/**/*.md
             /i18n/ja/docusaurus-plugin-content-docs/**/preprocessing.conf
+            /i18n/fr/docusaurus-plugin-content-docs/**/*.md
+            /i18n/fr/docusaurus-plugin-content-docs/**/preprocessing.conf
 
       - uses: actions/setup-node@v7
         with:
