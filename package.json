@@ -10,7 +10,7 @@
     "test": "node --test test/*.test.js",
     "render": "node bin/c2o.js render",
     "coverage": "node bin/c2o.js coverage",
-    "sample": "node bin/c2o.js render --out output/classic-to-oop.md && node bin/c2o.js render --lang ja --out output/classic-to-oop.ja.md",
+    "sample": "node bin/c2o.js render --out output/classic-to-oop.md && node bin/c2o.js render --lang ja --out output/classic-to-oop.ja.md && node bin/c2o.js render --lang fr --out output/classic-to-oop.fr.md",
     "site": "node bin/c2o.js site --out site"
   },
   "engines": {

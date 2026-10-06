@@ -1,8 +1,8 @@
-// Static single-page site (no dependencies, no CDN): site/index.html (en), site/ja/index.html (ja) + data.json.
+// Static single-page site (no dependencies, no CDN): site/index.html (en), site/<lang>/index.html (ja, fr) + data.json.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { buildRows, I18N } from './render.js';
+import { buildRows, I18N, LANGS } from './render.js';
 import { normalizeRelease } from './release.js';
 
 export const DEFAULT_REPO_URL = 'https://github.com/miyako/4d-classic-to-oop';
@@ -27,7 +27,6 @@ const UI = {
     source: 'Source & mapping on GitHub',
     unreviewed: '† not reviewed yet.',
     since: 'since',
-    other: '日本語',
     modes: { auto: '◐ Auto', light: '☀ Light', dark: '☾ Dark' },
     modeTitle: 'Color theme: Auto (system) → Light → Dark',
   },
@@ -49,11 +48,36 @@ const UI = {
     source: 'GitHub のソースとマッピング',
     unreviewed: '† 未レビュー。',
     since: '',
-    other: 'English',
     modes: { auto: '◐ 自動', light: '☀ ライト', dark: '☾ ダーク' },
     modeTitle: 'カラーテーマ: 自動 (システム) → ライト → ダーク',
   },
+  fr: {
+    search: 'Rechercher commandes, classes, notes…',
+    allThemes: 'Tous les thèmes',
+    allClassifications: 'Toutes les classifications',
+    allSections: 'Général + ORDA',
+    general: 'Général',
+    orda: 'ORDA',
+    section: 'Section',
+    unreviewedOnly: 'Non vérifiées uniquement',
+    shown: '{n} sur {total} commandes',
+    none: 'Aucune commande correspondante.',
+    meta: 'Version de la documentation',
+    floor: 'Version minimale',
+    generated: 'Généré le',
+    docsCommit: 'Commit de la documentation',
+    source: 'Source et mapping sur GitHub',
+    unreviewed: '† pas encore vérifiée.',
+    since: 'depuis',
+    modes: { auto: '◐ Auto', light: '☀ Clair', dark: '☾ Sombre' },
+    modeTitle: 'Thème de couleurs : Auto (système) → Clair → Sombre',
+  },
 };
+
+/** Native name of each site language (language switcher). */
+const LANG_NAMES = { en: 'English', ja: '日本語', fr: 'Français' };
+/** Site sub-directory of a language ('' for en). */
+const langDir = (lang) => (lang === 'en' ? '' : `${lang}/`);
 
 /** Commit of the docs clone (read-only git call), or null. */
 export function docsCommit(docsRoot) {
@@ -82,6 +106,7 @@ export function buildSiteData(mapping, opts) {
       },
       rows: rows.map((r) => ({
         command: r.command,
+        commandLocal: r.commandLocal || null,
         url: r.url,
         theme: r.theme,
         themeLabel: r.themeLabel,
@@ -91,7 +116,7 @@ export function buildSiteData(mapping, opts) {
         note: r.note,
         reviewed: r.reviewed,
         deprecated: r.deprecated,
-        targets: r.targets.map((t) => ({ label: t.label, url: t.url, addedIn: t.addedIn || null })),
+        targets: r.targets.map((t) => ({ label: t.label, localLabel: t.localLabel || null, url: t.url, addedIn: t.addedIn || null })),
       })),
     },
     warnings,
@@ -132,6 +157,8 @@ th{background:var(--head);position:sticky;top:0;cursor:pointer;user-select:none;
 th[aria-sort=ascending]::after{content:" ▲";font-size:.8em}th[aria-sort=descending]::after{content:" ▼";font-size:.8em}
 tbody tr:hover{background:var(--hover)}
 td.cmd{white-space:nowrap;font-weight:600}
+.en{display:block;color:var(--muted);font-size:.78em;font-weight:400}td.targets .en{display:inline;margin-left:4px;font-family:inherit}
+.langs{display:flex;gap:8px}.langs [aria-current]{font-weight:600;color:var(--fg)}
 td.targets{white-space:nowrap}td.targets a{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
 sub{color:var(--muted);font-size:.75em}
 .badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:.85em;font-weight:600;white-space:nowrap}
@@ -155,19 +182,23 @@ var themes={};rows.forEach(function(r){themes[r.theme]=r.themeLabel});
 opt(fTheme,Object.keys(themes).sort(function(a,b){return themes[a].localeCompare(themes[b],D.meta.lang)}).map(function(k){return[k,themes[k]]}));
 var cls={};rows.forEach(function(r){cls[r.classification]=r.classificationLabel});
 opt(fCls,['Drop-in','Refactor','Partial'].filter(function(k){return cls[k]}).map(function(k){return[k,cls[k]]}));
-rows.forEach(function(r){r._text=[r.command,r.theme,r.themeLabel,r.classification,r.classificationLabel,r.note].concat(r.targets.map(function(t){return t.label})).join(' ').toLowerCase()});
-var keyOf={command:function(r){return r.command.toLowerCase()},theme:function(r){return r.themeLabel+'\\u0000'+r.command.toLowerCase()},
-section:function(r){return r.section+'\\u0000'+r.themeLabel+'\\u0000'+r.command.toLowerCase()},targets:function(r){return r.targets.map(function(t){return t.label}).join(' ').toLowerCase()},
-classification:function(r){return ['Drop-in','Refactor','Partial'].indexOf(r.classification)+'\\u0000'+r.command.toLowerCase()},note:function(r){return r.note.toLowerCase()}};
+function name(r){return r.commandLocal||r.command}
+function tname(t){return t.localLabel||t.label}
+rows.forEach(function(r){r._text=[r.command,r.commandLocal,r.theme,r.themeLabel,r.classification,r.classificationLabel,r.note].concat(r.targets.map(function(t){return t.label+' '+(t.localLabel||'')})).join(' ').toLowerCase()});
+var keyOf={command:function(r){return[name(r)]},theme:function(r){return[r.themeLabel,name(r)]},
+section:function(r){return[r.section,r.themeLabel,name(r)]},targets:function(r){return[r.targets.map(tname).join(' ')]},
+classification:function(r){return[String(['Drop-in','Refactor','Partial'].indexOf(r.classification)),name(r)]},note:function(r){return[r.note]}};
+var coll=new Intl.Collator(D.meta.lang,{sensitivity:'base'});
+function cmp(x,y){for(var i=0;i<x.length;i++){var d=coll.compare(x[i],y[i]);if(d)return d}return 0}
 function rowHtml(r){
- var tg=r.targets.map(function(t){return '<div><a href="'+esc(t.url)+'">'+esc(t.label)+'</a>'+(t.addedIn?' <sub>'+esc((T.since?T.since+' ':'')+t.addedIn)+'</sub>':'')+'</div>'}).join('');
- return '<tr><td class="cmd"><a href="'+esc(r.url)+'">'+esc(r.command)+'</a>'+(r.deprecated?' <span class="dep">('+esc(T.deprecated)+')</span>':'')+(r.reviewed?'':' <span class="dag" title="'+esc(T.unreviewed)+'">†</span>')+'</td>'+
+ var tg=r.targets.map(function(t){return '<div><a href="'+esc(t.url)+'">'+esc(tname(t))+'</a>'+(t.localLabel?'<span class="en" lang="en">'+esc(t.label)+'</span>':'')+(t.addedIn?' <sub>'+esc((T.since?T.since+' ':'')+t.addedIn)+'</sub>':'')+'</div>'}).join('');
+ return '<tr><td class="cmd"><a href="'+esc(r.url)+'">'+esc(name(r))+'</a>'+(r.deprecated?' <span class="dep">('+esc(T.deprecated)+')</span>':'')+(r.reviewed?'':' <span class="dag" title="'+esc(T.unreviewed)+'">†</span>')+(r.commandLocal?'<span class="en" lang="en">'+esc(r.command)+'</span>':'')+'</td>'+
  '<td>'+esc(r.themeLabel)+'</td><td><span class="badge b-'+r.section+'">'+esc(r.section==='orda'?T.orda:T.general)+'</span></td>'+
  '<td class="targets">'+tg+'</td><td><span class="badge b-'+esc(r.classification)+'">'+esc(r.classificationLabel)+'</span></td><td class="note">'+esc(r.note)+'</td></tr>'}
 function update(){
  var words=q.value.toLowerCase().split(/\\s+/).filter(Boolean),th=fTheme.value,c=fCls.value,s=fSec.value,rv=fRev.checked;
  var list=rows.filter(function(r){return(!th||r.theme===th)&&(!c||r.classification===c)&&(!s||r.section===s)&&(!rv||!r.reviewed)&&words.every(function(w){return r._text.indexOf(w)>=0})});
- var k=keyOf[sortKey];list.sort(function(a,b){var x=k(a),y=k(b);return(x<y?-1:x>y?1:0)*sortDir});
+ var k=keyOf[sortKey];list.sort(function(a,b){return cmp(k(a),k(b))*sortDir});
  tbody.innerHTML=list.map(rowHtml).join('');empty.hidden=list.length>0;count.textContent=T.shown.replace('{n}',list.length).replace('{total}',rows.length);
  var p=new URLSearchParams();if(q.value)p.set('q',q.value);if(th)p.set('theme',th);if(c)p.set('class',c);if(s)p.set('section',s);if(rv)p.set('unreviewed','1');
  if(sortKey!=='theme'||sortDir!==1)p.set('sort',(sortDir<0?'-':'')+sortKey);
@@ -177,7 +208,7 @@ var P=new URLSearchParams(location.search);q.value=P.get('q')||'';fTheme.value=P
 var so=P.get('sort');if(so&&keyOf[so.replace(/^-/,'')]){sortKey=so.replace(/^-/,'');sortDir=so[0]==='-'?-1:1}
 document.querySelectorAll('th[data-k]').forEach(function(h){h.addEventListener('click',function(){if(sortKey===h.dataset.k)sortDir=-sortDir;else{sortKey=h.dataset.k;sortDir=1}update()})});
 [q,fTheme,fCls,fSec,fRev].forEach(function(e){e.addEventListener('input',update);e.addEventListener('change',update)});
-var other=document.getElementById('other');other.addEventListener('click',function(){other.href=other.getAttribute('href').split('?')[0]+location.search});
+document.querySelectorAll('.langs a[href]').forEach(function(a){a.addEventListener('click',function(){a.href=a.getAttribute('href').split('?')[0]+location.search})});
 update();
 var modeBtn=document.getElementById('mode'),order=['auto','light','dark'];
 function getMode(){try{return localStorage.getItem('c2o-theme')||'auto'}catch(e){return 'auto'}}
@@ -190,8 +221,16 @@ setMode(getMode());
 `;
 
 /** Render one language page. */
-export function siteHtml(data, { otherHref }) {
+export function siteHtml(data, { langs = LANGS } = {}) {
   const lang = data.meta.lang;
+  const up = lang === 'en' ? '' : '../';
+  const hrefOf = (l) => up + langDir(l) || './';
+  const switcher = langs
+    .map((l) => (l === lang
+      ? `<span aria-current="page" lang="${l}">${escHtml(LANG_NAMES[l] || l)}</span>`
+      : `<a href="${escHtml(hrefOf(l))}" hreflang="${l}" lang="${l}">${escHtml(LANG_NAMES[l] || l)}</a>`))
+    .join('');
+  const alternates = langs.filter((l) => l !== lang).map((l) => `<link rel="alternate" hreflang="${l}" href="${escHtml(hrefOf(l))}">`).join('\n');
   const t = I18N[lang] || I18N.en;
   const u = UI[lang] || UI.en;
   const m = data.meta;
@@ -209,13 +248,13 @@ export function siteHtml(data, { otherHref }) {
 <link rel="icon" href="data:,">
 <title>${escHtml(t.title)}</title>
 <meta name="description" content="${escHtml(t.intro)}">
-<link rel="alternate" hreflang="${lang === 'ja' ? 'en' : 'ja'}" href="${escHtml(otherHref)}">
+${alternates}
 <script>try{var m=localStorage.getItem('c2o-theme');if(m==='light'||m==='dark')document.documentElement.dataset.theme=m}catch(e){}</script>
 <style>${CSS}</style>
 </head>
 <body>
 <header>
-<div class="top"><h1>${escHtml(t.title)}</h1><div class="tools"><button type="button" id="mode" aria-live="polite"></button><a id="other" href="${escHtml(otherHref)}" hreflang="${lang === 'ja' ? 'en' : 'ja'}">${escHtml(u.other)}</a></div></div>
+<div class="top"><h1>${escHtml(t.title)}</h1><div class="tools"><button type="button" id="mode" aria-live="polite"></button><nav class="langs">${switcher}</nav></div></div>
 <p class="intro">${escHtml(t.intro)}</p>
 <p class="meta">${escHtml(u.meta)}: <code>${escHtml(m.docsVersion)}</code>${m.floor ? ` · ${escHtml(u.floor)}: <code>${escHtml(m.floor)}</code>` : ''} · ${escHtml(u.generated)}: <code>${escHtml(m.generatedAt.slice(0, 16).replace('T', ' '))} UTC</code> · ${escHtml(u.docsCommit)}: ${commit} · <a href="${escHtml(m.repoUrl)}">${escHtml(u.source)}</a></p>
 <p class="legend">${legend} ${escHtml(u.unreviewed)}</p>
@@ -244,7 +283,7 @@ export function siteHtml(data, { otherHref }) {
 `;
 }
 
-/** Build site/index.html, site/data.json, site/ja/index.html, site/ja/data.json (+ .nojekyll). */
+/** Build site/index.html + data.json (en) and site/<lang>/index.html + data.json for ja, fr (+ .nojekyll). */
 export function buildSite(mapping, opts) {
   const outDir = path.resolve(opts.outDir || 'site');
   const common = {
@@ -254,14 +293,12 @@ export function buildSite(mapping, opts) {
   };
   const warnings = [];
   const files = [];
-  for (const [lang, dir, otherHref] of [
-    ['en', outDir, 'ja/'],
-    ['ja', path.join(outDir, 'ja'), '../'],
-  ]) {
+  for (const lang of LANGS) {
+    const dir = path.join(outDir, langDir(lang));
     const { data, warnings: w } = buildSiteData(mapping, { ...common, lang });
     warnings.push(...w.filter((x) => !warnings.includes(x)));
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'index.html'), siteHtml(data, { otherHref }));
+    fs.writeFileSync(path.join(dir, 'index.html'), siteHtml(data));
     fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(data, null, 2) + '\n');
     files.push(path.join(dir, 'index.html'), path.join(dir, 'data.json'));
   }

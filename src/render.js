@@ -2,10 +2,16 @@
 import { getCatalog, indexCatalog, resolveTarget, missingReason } from './extract.js';
 import { isAvailableAt, normalizeRelease } from './release.js';
 import { ORDA_THEMES, ORDA_CLASSES } from './rules.js';
+import { loadCommandNames, localCommandName } from './names.js';
+
+/** Supported output languages. Notes: `note` (en), `note_<lang>` for the others. */
+export const LANGS = ['en', 'ja', 'fr'];
+export const NOTE_LANGS = LANGS.filter((l) => l !== 'en');
 
 export const CLASSIFICATION_LABELS = {
   en: { 'Drop-in': 'Drop-in', Refactor: 'Refactor', Partial: 'Partial' },
   ja: { 'Drop-in': 'そのまま置換', Refactor: 'リファクタリング要', Partial: '部分的' },
+  fr: { 'Drop-in': 'Remplacement direct', Refactor: 'Refactorisation', Partial: 'Partiel' },
 };
 
 export const I18N = {
@@ -41,6 +47,23 @@ export const I18N = {
     unreviewed: '† の付いた項目は未レビューです。',
     since: '',
   },
+  fr: {
+    title: 'Commandes 4D classiques ayant un équivalent objet (OOP)',
+    intro:
+      "Commandes du langage 4D classique et les fonctions de classe, propriétés ou commandes retournant des objets qui peuvent les remplacer. Les commandes classiques sont affichées sous leur nom français, suivi du nom anglais en petit ; les classes et fonctions n'ont pas de nom localisé.",
+    general: 'Général',
+    orda: 'ORDA (accès aux données)',
+    cols: ['Commande classique', 'Thème', 'Équivalent(s) OOP', 'Classification', 'Notes'],
+    legend:
+      "**Remplacement direct** (Drop-in) : remplacement 1:1 avec la même sémantique. **Refactorisation** (Refactor) : fonctionnalité équivalente mais modèle différent (ex. référence de document → `FileHandle`, tableaux → collections, sélection courante → entity selection). **Partiel** (Partial) : l'API objet ne couvre qu'une partie de la commande.",
+    meta: (o) =>
+      `Version de la documentation : \`${o.version}\` · Langue : \`${o.lang}\`` +
+      (o.floor ? ` · Plancher : \`${o.floor}\` (uniquement les équivalents OOP disponibles en 4D ${o.floor} ou avant)` : '') +
+      ` · Commandes : ${o.count} (général ${o.general}, ORDA ${o.orda})`,
+    deprecated: 'obsolète',
+    unreviewed: "Les entrées marquées † n'ont pas encore été vérifiées.",
+    since: 'depuis',
+  },
 };
 
 const esc = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
@@ -67,6 +90,7 @@ export function buildRows(mapping, opts) {
   const floorRel = floor ? normalizeRelease(floor) : null;
   if (floor && !floorRel) throw new Error(`Invalid --floor release: ${floor}`);
 
+  const names = loadCommandNames(lang);
   const rows = [];
   for (const m of mapping.mappings) {
     const cmd = cmdIdx.byCommand.get(m.command.toLowerCase());
@@ -90,6 +114,8 @@ export function buildRows(mapping, opts) {
         continue;
       }
       if (floorRel && !isAvailableAt(r.addedIn, floorRel)) continue;
+      // Object-returning commands have localized names too; class members do not.
+      if (r.type === 'command') r.localLabel = localCommandName(r.ref, names);
       targets.push(r);
     }
     if (!targets.length) continue;
@@ -97,28 +123,35 @@ export function buildRows(mapping, opts) {
       m.orda ?? (ORDA_THEMES.has(cmd.theme) || targets.some((t) => t.type === 'member' && ORDA_CLASSES.has(t.ref.class)));
     rows.push({
       command: cmd.name,
+      commandLocal: localCommandName(cmd, names),
       url: cmd.url,
       theme: cmd.theme,
       themeLabel: (lang !== 'en' && cmd.themeLabel) || cmd.theme,
       targets,
       classification: m.classification,
       classificationLabel: (CLASSIFICATION_LABELS[lang] || CLASSIFICATION_LABELS.en)[m.classification] || m.classification,
-      note: (lang === 'ja' && m.note_ja) || m.note || '',
+      note: (lang !== 'en' && m[`note_${lang}`]) || m.note || '',
       orda,
       deprecated: !!deprecated,
       reviewed: m.reviewed !== false,
     });
   }
-  rows.sort((a, b) => a.theme.localeCompare(b.theme, 'en') || a.command.localeCompare(b.command, 'en'));
+  rows.sort(
+    (a, b) =>
+      a.theme.localeCompare(b.theme, 'en') || (a.commandLocal || a.command).localeCompare(b.commandLocal || b.command, lang, { sensitivity: 'base' }),
+  );
   return { rows, warnings };
 }
 
 function table(rows, t, { showSince }) {
   const out = [`| ${t.cols.join(' | ')} |`, `|${t.cols.map(() => '---').join('|')}|`];
   for (const r of rows) {
-    const cmd = link(r.command, r.url) + (r.deprecated ? ` *(${t.deprecated})*` : '') + (r.reviewed ? '' : ' †');
+    const cmd =
+      link(r.commandLocal || r.command, r.url) +
+      (r.commandLocal ? ` <sub>${esc(r.command)}</sub>` : '') +
+      (r.deprecated ? ` *(${t.deprecated})*` : '') + (r.reviewed ? '' : ' †');
     const targets = r.targets
-      .map((x) => link(x.label, x.url) + (showSince && x.addedIn ? ` <sub>${t.since ? t.since + ' ' : ''}${x.addedIn}</sub>` : ''))
+      .map((x) => link(x.localLabel || x.label, x.url) + (x.localLabel ? ` <sub>${esc(x.label)}</sub>` : '') + (showSince && x.addedIn ? ` <sub>${t.since ? t.since + ' ' : ''}${x.addedIn}</sub>` : ''))
       .join('<br>');
     out.push(`| ${cmd} | ${esc(r.themeLabel)} | ${targets} | ${esc(r.classificationLabel)} | ${esc(r.note)} |`);
   }

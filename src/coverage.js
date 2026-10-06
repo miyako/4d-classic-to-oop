@@ -3,6 +3,9 @@ import { getCatalog, indexCatalog, resolveTarget, missingReason } from './extrac
 import { proposeCandidates } from './candidates.js';
 import { compareReleases, normalizeRelease } from './release.js';
 import { THEME_RULES } from './rules.js';
+import { NOTE_LANGS } from './render.js';
+
+const LANG_NAMES = { ja: 'Japanese', fr: 'French' };
 
 export function coverageReport(mapping, { docsRoot, version = 'latest', since = null, all = false }) {
   const catalog = getCatalog({ docsRoot, version, lang: 'en' });
@@ -21,7 +24,7 @@ export function coverageReport(mapping, { docsRoot, version = 'latest', since = 
   const referenced = new Set();
   for (const m of mapping.mappings) {
     mapped.add(m.command.toLowerCase());
-    if (m.note && !String(m.note_ja || '').trim()) warnings.push(`${m.command}: missing note_ja (Japanese translation of note)`);
+    for (const l of NOTE_LANGS) if (m.note && !String(m[`note_${l}`] || '').trim()) warnings.push(`${m.command}: missing note_${l} (${LANG_NAMES[l]} translation of note)`);
     if (!cmdIdx.byCommand.has(m.command.toLowerCase())) errors.push(`unknown command: ${m.command}`);
     for (const t of m.targets) {
       const r = /^command:/i.test(t) ? resolveTarget(t, cmdIdx) : resolveTarget(t, memIdx);

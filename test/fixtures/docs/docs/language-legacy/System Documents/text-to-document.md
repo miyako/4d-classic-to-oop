@@ -23,3 +23,9 @@ displayed_sidebar: docs
 <!--REF #_command_.TEXT TO DOCUMENT.Summary-->The **TEXT TO DOCUMENT** command lets you write the *text* directly to a disk file.<!-- END REF-->
 
 See also [file.setText()](../../API/FileClass.md#settext) and [Open document](../commands/open-document).
+
+## Properties
+
+|  |  |
+| --- | --- |
+| Command number | 1237 |
