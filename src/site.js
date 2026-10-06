@@ -28,6 +28,8 @@ const UI = {
     unreviewed: '† not reviewed yet.',
     since: 'since',
     other: '日本語',
+    modes: { auto: '◐ Auto', light: '☀ Light', dark: '☾ Dark' },
+    modeTitle: 'Color theme: Auto (system) → Light → Dark',
   },
   ja: {
     search: 'コマンド・クラス・備考を検索…',
@@ -48,6 +50,8 @@ const UI = {
     unreviewed: '† 未レビュー。',
     since: '',
     other: 'English',
+    modes: { auto: '◐ 自動', light: '☀ ライト', dark: '☾ ダーク' },
+    modeTitle: 'カラーテーマ: 自動 (システム) → ライト → ダーク',
   },
 };
 
@@ -99,9 +103,13 @@ const jsonForScript = (o) => JSON.stringify(o).replace(/</g, '\\u003c').replace(
 
 const CSS = `
 :root{--bg:#fff;--fg:#1f2328;--muted:#656d76;--border:#d0d7de;--head:#f6f8fa;--link:#0969da;--hover:#f3f6fa;
---drop:#1a7f37;--drop-bg:#dafbe1;--ref:#9a6700;--ref-bg:#fff8c5;--part:#bc4c00;--part-bg:#fff1e5;--orda:#8250df;--orda-bg:#fbefff}
-@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#8d96a0;--border:#30363d;--head:#161b22;--link:#4493f8;--hover:#161b22;
---drop:#3fb950;--drop-bg:#12261e;--ref:#d29922;--ref-bg:#272115;--part:#f0883e;--part-bg:#2d1d12;--orda:#ab7df8;--orda-bg:#231a35}}
+--drop:#1a7f37;--drop-bg:#dafbe1;--ref:#9a6700;--ref-bg:#fff8c5;--part:#bc4c00;--part-bg:#fff1e5;--orda:#8250df;--orda-bg:#fbefff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1117;--fg:#e6edf3;--muted:#8d96a0;--border:#30363d;--head:#161b22;--link:#4493f8;--hover:#161b22;
+--drop:#3fb950;--drop-bg:#12261e;--ref:#d29922;--ref-bg:#272115;--part:#f0883e;--part-bg:#2d1d12;--orda:#ab7df8;--orda-bg:#231a35;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#0d1117;--fg:#e6edf3;--muted:#8d96a0;--border:#30363d;--head:#161b22;--link:#4493f8;--hover:#161b22;
+--drop:#3fb950;--drop-bg:#12261e;--ref:#d29922;--ref-bg:#272115;--part:#f0883e;--part-bg:#2d1d12;--orda:#ab7df8;--orda-bg:#231a35;color-scheme:dark}
+.tools{display:flex;gap:12px;align-items:center}
+#mode{font:inherit;padding:3px 10px;border:1px solid var(--border);border-radius:999px;background:var(--head);color:var(--fg);cursor:pointer}
 *{box-sizing:border-box}
 body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP",Meiryo,sans-serif;background:var(--bg);color:var(--fg)}
 a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}
@@ -171,6 +179,13 @@ document.querySelectorAll('th[data-k]').forEach(function(h){h.addEventListener('
 [q,fTheme,fCls,fSec,fRev].forEach(function(e){e.addEventListener('input',update);e.addEventListener('change',update)});
 var other=document.getElementById('other');other.addEventListener('click',function(){other.href=other.getAttribute('href').split('?')[0]+location.search});
 update();
+var modeBtn=document.getElementById('mode'),order=['auto','light','dark'];
+function getMode(){try{return localStorage.getItem('c2o-theme')||'auto'}catch(e){return 'auto'}}
+function setMode(m){if(m==='auto')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=m;
+ try{m==='auto'?localStorage.removeItem('c2o-theme'):localStorage.setItem('c2o-theme',m)}catch(e){}
+ modeBtn.textContent=T.modes[m];modeBtn.title=T.modeTitle;modeBtn.setAttribute('aria-label',T.modeTitle)}
+modeBtn.addEventListener('click',function(){setMode(order[(order.indexOf(getMode())+1)%3])});
+setMode(getMode());
 })();
 `;
 
@@ -195,11 +210,12 @@ export function siteHtml(data, { otherHref }) {
 <title>${escHtml(t.title)}</title>
 <meta name="description" content="${escHtml(t.intro)}">
 <link rel="alternate" hreflang="${lang === 'ja' ? 'en' : 'ja'}" href="${escHtml(otherHref)}">
+<script>try{var m=localStorage.getItem('c2o-theme');if(m==='light'||m==='dark')document.documentElement.dataset.theme=m}catch(e){}</script>
 <style>${CSS}</style>
 </head>
 <body>
 <header>
-<div class="top"><h1>${escHtml(t.title)}</h1><a id="other" href="${escHtml(otherHref)}" hreflang="${lang === 'ja' ? 'en' : 'ja'}">${escHtml(u.other)}</a></div>
+<div class="top"><h1>${escHtml(t.title)}</h1><div class="tools"><button type="button" id="mode" aria-live="polite"></button><a id="other" href="${escHtml(otherHref)}" hreflang="${lang === 'ja' ? 'en' : 'ja'}">${escHtml(u.other)}</a></div></div>
 <p class="intro">${escHtml(t.intro)}</p>
 <p class="meta">${escHtml(u.meta)}: <code>${escHtml(m.docsVersion)}</code>${m.floor ? ` · ${escHtml(u.floor)}: <code>${escHtml(m.floor)}</code>` : ''} · ${escHtml(u.generated)}: <code>${escHtml(m.generatedAt.slice(0, 16).replace('T', ' '))} UTC</code> · ${escHtml(u.docsCommit)}: ${commit} · <a href="${escHtml(m.repoUrl)}">${escHtml(u.source)}</a></p>
 <p class="legend">${legend} ${escHtml(u.unreviewed)}</p>

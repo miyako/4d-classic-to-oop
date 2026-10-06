@@ -167,6 +167,7 @@ The pages have:
 * theme, classification, General/ORDA and "unreviewed only" filters (kept in the URL query string);
 * sortable columns;
 * colored classification badges and a † marker on unreviewed entries;
+* light/dark mode: follows the system setting by default, and a toggle cycles Auto → Light → Dark (the choice is saved in `localStorage`);
 * the generation metadata: docs version, floor, date and the docs commit.
 
 Deployment is done by [`.github/workflows/pages.yml`](.github/workflows/pages.yml):
