@@ -9,6 +9,8 @@ import { loadMapping } from '../src/mapping.js';
 import { renderMarkdown } from '../src/render.js';
 import { coverageReport, coverageToMarkdown } from '../src/coverage.js';
 import { buildSite, DEFAULT_REPO_URL, DEFAULT_DOCS_REPO } from '../src/site.js';
+import { LANGS } from '../src/render.js';
+import { parseCommandXliff, namesDocument, NAMES_DIR } from '../src/names.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -21,13 +23,14 @@ Commands:
   candidates   Propose OOP targets per command (heuristics) to help curate mapping.yaml
   render       Generate the Markdown table from mapping.yaml
   coverage     Report docs items not covered by mapping.yaml and validate targets (alias: diff)
-  site         Build the static web site (en + ja) into --out (default: site/)
+  site         Build the static web site (en + ja + fr) into --out (default: site/)
+  import-names Import localized classic command names from a 4D app (--xlf) into data/command-names.<lang>.json
   versions     List docs versions available in --docs-root
 
 Common options:
   --docs-root <dir>      4D docs clone (read-only). Default: $C2O_DOCS_ROOT or ../docs
   --docs-version <v>     latest (default) | 21-R4 | 21-R3 | 21 | 20 | 19 | 18
-  --lang <en|ja>         Language for links/summaries (default: en)
+  --lang <en|ja|fr>      Language for links, notes, themes and (fr) command names (default: en)
   --mapping <file>       Mapping file (default: mapping.yaml in this repo)
   --out <file>           Write output to a file instead of stdout
   --format <md|json>     Output format for candidates/coverage (default: md)
@@ -47,6 +50,11 @@ site:
   --floor, --docs-version, --themes, --include-deprecated   Same as render
   --repo-url <url>       Link back to this repository (default: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY or ${DEFAULT_REPO_URL})
   --docs-repo <o/r>      GitHub repo of the docs, used to link the docs commit (default: ${DEFAULT_DOCS_REPO})
+
+import-names:
+  --xlf <file>           e.g. "/Applications/4D 21 R4/4D.app/Contents/Resources/fr.lproj/4D_CommandsFR.xlf"
+  --lang <fr>            Target language of the XLIFF (default: fr)
+  --source <text>        Provenance recorded in the JSON (default: derived from the --xlf path)
 
 coverage:
   --since <release>      Also list commands/members added after <release>
@@ -79,6 +87,8 @@ function main(argv) {
       strict: { type: 'boolean', default: false },
       'repo-url': { type: 'string' },
       'docs-repo': { type: 'string', default: DEFAULT_DOCS_REPO },
+      xlf: { type: 'string' },
+      source: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
   });
@@ -86,9 +96,26 @@ function main(argv) {
     process.stdout.write(HELP);
     return 0;
   }
+  if (cmd === 'import-names') {
+    if (!o.xlf) throw new Error('import-names requires --xlf <4D_Commands<LANG>.xlf>');
+    const lang = o.lang === 'en' ? 'fr' : o.lang;
+    const entries = parseCommandXliff(fs.readFileSync(o.xlf, 'utf8'));
+    if (!entries.length) throw new Error(`No command names found in ${o.xlf}`);
+    const app = o.xlf.match(/([^/\\]*4D[^/\\]*)[/\\]4D(?: Server)?\.app/);
+    const source = o.source || `${app ? app[1] : path.basename(path.dirname(path.dirname(o.xlf)))} ${path.basename(o.xlf)}`;
+    const out = o.out || path.join(NAMES_DIR, `command-names.${lang}.json`);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    const doc = namesDocument(entries, { lang, source });
+    // One command per line keeps diffs readable when a new 4D release is imported.
+    const lines = Object.entries(doc.commands).map(([n, e]) => `    ${JSON.stringify(n)}: ${JSON.stringify(e)}`);
+    const head = JSON.stringify({ lang: doc.lang, source: doc.source, count: doc.count }, null, 2).replace(/\n}$/, '');
+    fs.writeFileSync(out, `${head},\n  "commands": {\n${lines.join(',\n')}\n  }\n}\n`);
+    process.stderr.write(`Wrote ${out} (${Object.keys(namesDocument(entries, { lang, source }).commands).length} command names, ${lang})\n`);
+    return 0;
+  }
   const docsRoot = path.resolve(o['docs-root'] || process.env.C2O_DOCS_ROOT || path.join(REPO, '..', 'docs'));
   if (!fs.existsSync(path.join(docsRoot, 'docs'))) throw new Error(`--docs-root does not look like a 4D docs clone: ${docsRoot}`);
-  if (!['en', 'ja'].includes(o.lang)) throw new Error(`--lang must be en or ja`);
+  if (!LANGS.includes(o.lang)) throw new Error(`--lang must be one of ${LANGS.join(', ')}`);
   const version = o['docs-version'];
   if (!listVersions(docsRoot).includes(version)) throw new Error(`Unknown --docs-version "${version}". Available: ${listVersions(docsRoot).join(', ')}`);
   const write = (text) => {

@@ -8,6 +8,7 @@ import { loadMapping, validateMapping } from '../src/mapping.js';
 import { renderMarkdown } from '../src/render.js';
 import { coverageReport } from '../src/coverage.js';
 import { buildSite } from '../src/site.js';
+import { parseCommandXliff, namesDocument, localCommandName } from '../src/names.js';
 import fs from 'node:fs';
 import os from 'node:os';
 
@@ -91,13 +92,39 @@ test('render applies floor, deprecation and escaping', () => {
   assert.match(markdown, /https:\/\/developer\.4d\.com\/docs\/ja\/commands\/text-to-document/);
 });
 
-test('coverage warns about missing note_ja', () => {
+test('coverage warns about missing note_ja / note_fr', () => {
   const r = coverageReport(loadMapping(mappingFile), { docsRoot });
   assert.ok(r.warnings.includes('OLD COMMAND: missing note_ja (Japanese translation of note)'));
-  assert.ok(!r.warnings.some((w) => w.startsWith('TEXT TO DOCUMENT: missing note_ja')));
+  assert.ok(r.warnings.includes('OLD COMMAND: missing note_fr (French translation of note)'));
+  assert.ok(!r.warnings.some((w) => w.startsWith('TEXT TO DOCUMENT: missing note_')));
 });
 
-test('site builds en and ja pages with embedded data', () => {
+test('XLIFF command names (number first, then name)', () => {
+  const xml = `<xliff><file><body><group id="7" resname="STR#7"><trans-unit id="1"><source>Nope</source><target>Non</target></trans-unit></group>
+<group id="8" resname="STR#8"><trans-unit id="5"><source>Print form</source><target>Imprimer ligne </target></trans-unit>
+<trans-unit id="6"/><trans-unit id="7"/>
+<trans-unit id="8"><source>GET LAST QUERY PLAN</source><target>Lire dernier plan recherche</target></trans-unit>
+<trans-unit id="9"><source>Q &amp; A</source><target>Q &amp; R</target></trans-unit></group></body></file></xliff>`;
+  const entries = parseCommandXliff(xml);
+  assert.deepEqual(entries.map((e) => [e.number, e.local]), [[5, 'Imprimer ligne'], [8, 'Lire dernier plan recherche'], [9, 'Q & R']]);
+  const doc = namesDocument(entries, { lang: 'fr', source: 'test' });
+  assert.equal(doc.count, 3);
+  assert.deepEqual(doc.commands[8], { en: 'GET LAST QUERY PLAN', fr: 'Lire dernier plan recherche' });
+  const names = { byNumber: new Map(entries.map((e) => [e.number, e.local])), byName: new Map(entries.map((e) => [e.en.toLowerCase(), e.local])) };
+  assert.equal(localCommandName({ name: 'Last query plan', number: 8 }, names), 'Lire dernier plan recherche'); // renamed in English
+  assert.equal(localCommandName({ name: 'print form', number: null }, names), 'Imprimer ligne');
+  assert.equal(localCommandName({ name: 'Brand new', number: 1999 }, names), null); // falls back to English
+});
+
+test('render fr: French command names with English in small, localized labels', () => {
+  const { markdown } = renderMarkdown(loadMapping(mappingFile), { docsRoot, lang: 'fr' });
+  assert.match(markdown, /\[TEXTE VERS DOCUMENT\]\(https:\/\/developer\.4d\.com\/docs\/fr\/commands\/text-to-document\) <sub>TEXT TO DOCUMENT<\/sub>/);
+  assert.match(markdown, /\| Documents système \| /);
+  assert.match(markdown, /\| Remplacement direct \| Écrit le texte en un seul appel\. \|/);
+  assert.match(markdown, /\(https:\/\/developer\.4d\.com\/docs\/fr\/API\/FileClass#settext\)/);
+});
+
+test('site builds en, ja and fr pages with embedded data', () => {
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'c2o-site-'));
   try {
     buildSite(loadMapping(mappingFile), { docsRoot, outDir, docsCommit: 'abc1234def', generatedAt: '2026-01-01T00:00:00.000Z' });
@@ -110,6 +137,12 @@ test('site builds en and ja pages with embedded data', () => {
     const html = fs.readFileSync(path.join(outDir, 'ja', 'index.html'), 'utf8');
     assert.match(html, /<html lang="ja">/);
     assert.match(html, /href="\.\.\/" hreflang="en"/);
+    assert.match(html, /href="\.\.\/fr\/" hreflang="fr"/);
+    const fr = JSON.parse(fs.readFileSync(path.join(outDir, 'fr', 'data.json'), 'utf8'));
+    assert.equal(fr.rows[0].command, 'TEXT TO DOCUMENT');
+    assert.equal(fr.rows[0].commandLocal, 'TEXTE VERS DOCUMENT');
+    assert.equal(fr.rows[0].classificationLabel, 'Remplacement direct');
+    assert.match(fs.readFileSync(path.join(outDir, 'fr', 'index.html'), 'utf8'), /<html lang="fr">/);
     assert.ok(!/<script[^>]+src=/.test(html), 'no external scripts');
     assert.ok(fs.existsSync(path.join(outDir, '.nojekyll')));
   } finally {

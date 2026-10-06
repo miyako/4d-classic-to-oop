@@ -6,6 +6,7 @@ mappings:
     classification: Drop-in
     note: Writes text | in one call.
     note_ja: 一度に書き込みます。
+    note_fr: Écrit le texte en un seul appel.
   - command: OLD COMMAND
     targets: [FileHandle.writeText(), File.open()]
     classification: Refactor
